@@ -25,7 +25,7 @@ export interface TokenSelectProps {
   selectedToken?: Token;
 }
 
-const TokenSelect = ({ tokens, onSelect, selectedToken }: TokenSelectProps) => {
+export default function TokenSelect({ tokens, onSelect, selectedToken }: TokenSelectProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -91,10 +91,10 @@ const TokenSelect = ({ tokens, onSelect, selectedToken }: TokenSelectProps) => {
   }, [tokens, initializeWebSocket]);
 
   // Filter tokens based on search query
-  const filteredTokens = tokens.filter(token => 
+  const filteredTokens = tokens?.filter(token => 
     token.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
     token.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  ) || [];
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -136,7 +136,7 @@ const TokenSelect = ({ tokens, onSelect, selectedToken }: TokenSelectProps) => {
               <div className="p-4 text-center text-muted-foreground">Loading tokens...</div>
             ) : error ? (
               <div className="p-4 text-center text-red-500">{error}</div>
-            ) : (
+            ) : filteredTokens?.length ? (
               filteredTokens.map((token) => (
                 <CommandItem
                   key={token.id}
@@ -181,6 +181,8 @@ const TokenSelect = ({ tokens, onSelect, selectedToken }: TokenSelectProps) => {
                   />
                 </CommandItem>
               ))
+            ) : (
+              <div className="p-4 text-center text-muted-foreground">No tokens found</div>
             )}
           </CommandGroup>
         </Command>
@@ -188,5 +190,3 @@ const TokenSelect = ({ tokens, onSelect, selectedToken }: TokenSelectProps) => {
     </Popover>
   );
 }
-
-export default TokenSelect;
