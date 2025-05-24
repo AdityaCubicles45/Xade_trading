@@ -15,32 +15,40 @@ import { getUserPositions, closePosition } from '@/lib/trading';
 import { useToast } from '@/hooks/use-toast';
 import { formatPrice } from '@/lib/api';
 import { Loader } from 'lucide-react';
+import { getWalletAddress } from '@/lib/auth';
 
 export function UserPositions() {
   const { toast } = useToast();
   const [positions, setPositions] = useState<Position[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [walletAddress, setWalletAddress] = useState<string>('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const getPositions = async () => {
-      setIsLoading(true);
-      
-      const walletAddr = localStorage.getItem('walletAddress') || '';
-      setWalletAddress(walletAddr);
-      
-      if (walletAddr) {
-        const positionsData = await getUserPositions(walletAddr);
+    const fetchPositions = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const walletAddress = getWalletAddress();
+        if (!walletAddress) {
+          setError('Please connect your wallet to view positions');
+          return;
+        }
+        
+        const positionsData = await getUserPositions(walletAddress);
         setPositions(positionsData);
+      } catch (error) {
+        console.error('Error fetching positions:', error);
+        setError('Failed to load positions. Please try again later.');
+      } finally {
+        setLoading(false);
       }
-      
-      setIsLoading(false);
     };
     
-    getPositions();
+    fetchPositions();
     
     // Refresh positions every 5 seconds
-    const interval = setInterval(getPositions, 5000);
+    const interval = setInterval(fetchPositions, 5000);
     
     return () => clearInterval(interval);
   }, []);
@@ -60,8 +68,11 @@ export function UserPositions() {
         });
         
         // Refresh positions
-        const positionsData = await getUserPositions(walletAddress);
-        setPositions(positionsData);
+        const walletAddress = getWalletAddress();
+        if (walletAddress) {
+          const positionsData = await getUserPositions(walletAddress);
+          setPositions(positionsData);
+        }
       } else {
         toast({
           title: "Failed to close position",
@@ -70,6 +81,7 @@ export function UserPositions() {
         });
       }
     } catch (error) {
+      console.error('Error closing position:', error);
       toast({
         title: "Error closing position",
         description: "An unexpected error occurred",
@@ -85,20 +97,24 @@ export function UserPositions() {
         <CardDescription>Your active trading positions</CardDescription>
       </CardHeader>
       <CardContent>
-        {isLoading ? (
-          <div className="h-32 flex items-center justify-center">
-            <Loader className="h-8 w-8 animate-spin text-muted-foreground" />
+        {loading ? (
+          <div className="flex items-center justify-center h-[200px]">
+            <Loader className="h-6 w-6 animate-spin" />
+          </div>
+        ) : error ? (
+          <div className="text-center text-red-500 py-8">
+            {error}
           </div>
         ) : positions.length === 0 ? (
-          <div className="h-32 flex items-center justify-center text-muted-foreground">
+          <div className="text-center text-muted-foreground py-8">
             No open positions
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-4">
             {positions.map((position) => (
               <div 
                 key={position.id} 
-                className="p-3 border rounded-lg"
+                className="p-4 rounded-lg border bg-card"
               >
                 <div className="flex justify-between items-center mb-2">
                   <div className="font-medium">{position.market}</div>
@@ -111,7 +127,7 @@ export function UserPositions() {
                   </Button>
                 </div>
                 
-                <div className="grid grid-cols-2 gap-2 text-sm">
+                <div className="space-y-1 text-sm">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Amount:</span>
                     <span className="font-mono">{position.amount.toFixed(4)}</span>

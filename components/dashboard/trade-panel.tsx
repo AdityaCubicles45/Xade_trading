@@ -77,6 +77,15 @@ export function TradePanel({ market, currentPrice = 0 }: TradePanelProps) {
   };
 
   const handleOrder = async (positionType: 'Buy' | 'Sell') => {
+    if (!walletAddress) {
+      toast({
+        title: "Not connected",
+        description: "Please connect your wallet first",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (amount <= 0) {
       toast({
         title: "Invalid amount",
@@ -98,6 +107,15 @@ export function TradePanel({ market, currentPrice = 0 }: TradePanelProps) {
     setIsLoading(true);
     
     try {
+      console.log('Creating order with params:', {
+        walletAddress,
+        market,
+        positionType,
+        amount,
+        price,
+        orderType
+      });
+
       const result = await createOrder(
         walletAddress,
         market,
@@ -124,14 +142,15 @@ export function TradePanel({ market, currentPrice = 0 }: TradePanelProps) {
       } else {
         toast({
           title: "Failed to place order",
-          description: "Please try again later",
+          description: "Please check your balance and try again",
           variant: "destructive",
         });
       }
     } catch (error) {
+      console.error('Error placing order:', error);
       toast({
         title: "Error placing order",
-        description: "An unexpected error occurred",
+        description: "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -183,15 +202,13 @@ export function TradePanel({ market, currentPrice = 0 }: TradePanelProps) {
                 />
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-xs text-muted-foreground">Price</Label>
-                  <div className="font-mono text-lg">${price.toFixed(2)}</div>
-                </div>
-                <div>
-                  <Label className="text-xs text-muted-foreground">Total</Label>
-                  <div className="font-mono text-lg">${total.toFixed(2)}</div>
-                </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Price</Label>
+                <div className="font-mono text-lg">${price.toFixed(2)}</div>
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Total</Label>
+                <div className="font-mono text-lg">${total.toFixed(2)}</div>
               </div>
               
               <div className="grid grid-cols-2 gap-4">
@@ -257,15 +274,13 @@ export function TradePanel({ market, currentPrice = 0 }: TradePanelProps) {
                 />
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-xs text-muted-foreground">Price</Label>
-                  <div className="font-mono text-lg">${price.toFixed(2)}</div>
-                </div>
-                <div>
-                  <Label className="text-xs text-muted-foreground">Total</Label>
-                  <div className="font-mono text-lg">${total.toFixed(2)}</div>
-                </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Price</Label>
+                <div className="font-mono text-lg">${price.toFixed(2)}</div>
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Total</Label>
+                <div className="font-mono text-lg">${total.toFixed(2)}</div>
               </div>
               
               <div className="grid grid-cols-2 gap-4">

@@ -2,6 +2,37 @@ import { supabase } from './supabase';
 import { User } from './types';
 import { v4 as uuidv4 } from 'uuid';
 
+// Set demo balance for a user
+export const setDemoBalance = async (walletAddress: string): Promise<boolean> => {
+  try {
+    if (!walletAddress) {
+      console.error('No wallet address provided');
+      return false;
+    }
+
+    const { error } = await supabase
+      .from('users')
+      .update({
+        current_balance: 10000,
+        current_pnl: 0,
+        stage: 'demo',
+        tier: 'basic'
+      })
+      .eq('wallet_address', walletAddress);
+
+    if (error) {
+      console.error('Error setting demo balance:', error);
+      return false;
+    }
+
+    console.log('Demo balance set successfully for wallet:', walletAddress);
+    return true;
+  } catch (error) {
+    console.error('Error in setDemoBalance:', error);
+    return false;
+  }
+};
+
 // Initialize a new user in Supabase after successful Crossmint authentication
 export const initializeUser = async (walletAddress: string, email?: string): Promise<User | null> => {
   try {
@@ -22,15 +53,22 @@ export const initializeUser = async (walletAddress: string, email?: string): Pro
       return null;
     }
     
-    // If user already exists, return it
+    // If user already exists, update their balance to demo amount
     if (existingUser) {
-      return existingUser as User;
+      console.log('Existing user found, updating to demo balance:', existingUser);
+      await setDemoBalance(walletAddress);
+      const { data: updatedUser } = await supabase
+        .from('users')
+        .select('*')
+        .eq('wallet_address', walletAddress)
+        .single();
+      return updatedUser as User;
     }
     
     // Create a new user with UUID as id
     const username = `trader_${walletAddress.substring(0, 8)}`;
-    const newUser: Omit<User, 'id'> & { id: string } = {
-      id: uuidv4(), // Generate UUID for id
+    const newUser = {
+      id: uuidv4(),
       wallet_address: walletAddress,
       email: email || '',
       username,
@@ -40,16 +78,21 @@ export const initializeUser = async (walletAddress: string, email?: string): Pro
       current_pnl: 0
     };
     
-    const { error: insertError } = await supabase
+    console.log('Creating new user:', newUser);
+    
+    const { data: insertedUser, error: insertError } = await supabase
       .from('users')
-      .insert(newUser);
+      .insert(newUser)
+      .select()
+      .single();
     
     if (insertError) {
       console.error('Error creating user:', insertError);
       return null;
     }
     
-    return newUser;
+    console.log('User created successfully:', insertedUser);
+    return insertedUser as User;
   } catch (error) {
     console.error('Error in initializeUser:', error);
     return null;
@@ -63,6 +106,8 @@ export const getCurrentUser = async (walletAddress: string): Promise<User | null
       console.error('No wallet address provided to getCurrentUser');
       return null;
     }
+
+    console.log('Fetching user with wallet address:', walletAddress);
 
     const { data, error } = await supabase
       .from('users')
@@ -80,6 +125,7 @@ export const getCurrentUser = async (walletAddress: string): Promise<User | null
       return null;
     }
     
+    console.log('User found:', data);
     return data as User;
   } catch (error) {
     console.error('Error in getCurrentUser:', error);

@@ -5,7 +5,7 @@ import { updateUserBalance } from './auth';
 
 // Create a new order
 export const createOrder = async (
-  userId: string,
+  walletAddress: string,
   market: string,
   positionType: 'Buy' | 'Sell',
   amount: number,
@@ -13,18 +13,40 @@ export const createOrder = async (
   orderType: 'market' | 'limit' = 'market'
 ): Promise<Order | null> => {
   try {
+    // First get the user's ID from their wallet address
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('id, current_balance')
+      .eq('wallet_address', walletAddress)
+      .single();
+
+    if (userError || !userData) {
+      console.error('Error: User not found or invalid wallet address');
+      return null;
+    }
+
+    // Calculate total cost
+    const totalCost = amount * entryPrice;
+
+    // Check if user has enough balance for buy orders
+    if (positionType === 'Buy' && totalCost > userData.current_balance) {
+      console.error('Error: Insufficient balance');
+      return null;
+    }
+
     // Ensure all required fields are present and match the schema
     const newOrder = {
       id: uuidv4(),
-      user_id: userId,
+      user_id: userData.id,
       market,
       position_type: positionType,
-      amount: amount.toString(), // Convert to string for numeric type
-      entry_price: entryPrice.toString(), // Convert to string for numeric type
+      amount,
+      entry_price: entryPrice,
       order_type: orderType,
       status: 'pending'
     };
     
+    // Insert the order
     const { data, error } = await supabase
       .from('orders')
       .insert(newOrder)
@@ -35,29 +57,48 @@ export const createOrder = async (
       console.error('Error creating order:', error);
       return null;
     }
+
+    // Calculate new balance
+    const newBalance = positionType === 'Buy' 
+      ? userData.current_balance - totalCost
+      : userData.current_balance + totalCost;
     
     // Update user balance
-    const totalCost = amount * entryPrice;
-    const { data: userData, error: userError } = await supabase
+    const { error: balanceError } = await supabase
       .from('users')
-      .select('current_balance')
-      .eq('id', userId)
-      .single();
-    
-    if (userError) {
-      console.error('Error fetching user for balance update:', userError);
-      return data as Order;
+      .update({ 
+        current_balance: newBalance 
+      })
+      .eq('id', userData.id);
+
+    if (balanceError) {
+      console.error('Error updating user balance:', balanceError);
+      // Try to rollback the order
+      await supabase
+        .from('orders')
+        .delete()
+        .eq('id', data.id);
+      return null;
     }
-    
-    const newBalance = positionType === 'Buy' 
-      ? (userData as User).current_balance - totalCost
-      : (userData as User).current_balance + totalCost;
-    
-    await updateUserBalance(userId, newBalance, (userData as User).current_pnl);
     
     // Create a new position if it's a buy order
     if (positionType === 'Buy') {
-      await createPosition(userId, market, amount, entryPrice);
+      const positionResult = await createPosition(userData.id, market, amount, entryPrice);
+      if (!positionResult) {
+        console.error('Error creating position');
+        // Try to rollback the order and balance
+        await supabase
+          .from('orders')
+          .delete()
+          .eq('id', data.id);
+        await supabase
+          .from('users')
+          .update({ 
+            current_balance: userData.current_balance 
+          })
+          .eq('id', userData.id);
+        return null;
+      }
     }
     
     return data as Order;
@@ -68,12 +109,24 @@ export const createOrder = async (
 };
 
 // Get user's orders
-export const getUserOrders = async (userId: string): Promise<Order[]> => {
+export const getUserOrders = async (walletAddress: string): Promise<Order[]> => {
   try {
+    // First get the user's ID from their wallet address
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('wallet_address', walletAddress)
+      .single();
+
+    if (userError || !userData) {
+      console.error('Error fetching user:', userError);
+      return [];
+    }
+
     const { data, error } = await supabase
       .from('orders')
       .select('*')
-      .eq('user_id', userId)
+      .eq('user_id', userData.id)
       .order('created_at', { ascending: false });
     
     if (error) {
@@ -124,33 +177,29 @@ export const createPosition = async (
   entryPrice: number
 ): Promise<Position | null> => {
   try {
-    const newPosition: Omit<Position, 'id' | 'current_price' | 'pnl'> & { id: string } = {
+    const newPosition = {
       id: uuidv4(),
       user_id: userId,
       market,
       amount,
       entry_price: entryPrice,
+      current_price: entryPrice, // Set current price to entry price initially
+      pnl: 0, // Initialize PnL to 0
       is_open: true
     };
     
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('active_positions')
-      .insert({
-        ...newPosition,
-        current_price: entryPrice,
-        pnl: 0
-      });
+      .insert(newPosition)
+      .select()
+      .single();
     
     if (error) {
       console.error('Error creating position:', error);
       return null;
     }
     
-    return {
-      ...newPosition,
-      current_price: entryPrice,
-      pnl: 0
-    };
+    return data as Position;
   } catch (error) {
     console.error('Error in createPosition:', error);
     return null;
@@ -198,12 +247,25 @@ export const updatePosition = async (
 };
 
 // Get user's active positions
-export const getUserPositions = async (userId: string): Promise<Position[]> => {
+export const getUserPositions = async (walletAddress: string): Promise<Position[]> => {
   try {
+    // First get the user's ID from their wallet address
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('wallet_address', walletAddress)
+      .single();
+
+    if (userError || !userData) {
+      console.error('Error fetching user:', userError);
+      return [];
+    }
+
+    // Then get positions using the user's ID
     const { data, error } = await supabase
       .from('active_positions')
       .select('*')
-      .eq('user_id', userId)
+      .eq('user_id', userData.id)
       .eq('is_open', true);
     
     if (error) {
@@ -226,7 +288,7 @@ export const closePosition = async (
   try {
     const { data, error: fetchError } = await supabase
       .from('active_positions')
-      .select('*')
+      .select('*, users!inner(wallet_address)')
       .eq('id', positionId)
       .single();
     
@@ -235,12 +297,12 @@ export const closePosition = async (
       return false;
     }
     
-    const position = data as Position;
+    const position = data as Position & { users: { wallet_address: string } };
     const finalPnl = (closePrice - position.entry_price) * position.amount;
     
-    // Create a sell order
+    // Create a sell order using wallet address
     await createOrder(
-      position.user_id,
+      position.users.wallet_address,
       position.market,
       'Sell',
       position.amount,

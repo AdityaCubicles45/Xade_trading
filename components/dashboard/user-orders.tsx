@@ -25,48 +25,33 @@ type OrderType = 'all' | 'market' | 'limit';
 
 export function UserOrders() {
   const [orders, setOrders] = useState<Order[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<OrderStatus>('all');
   const [typeFilter, setTypeFilter] = useState<OrderType>('all');
 
   useEffect(() => {
-    const getOrders = async () => {
+    const fetchOrders = async () => {
       try {
-        setIsLoading(true);
-        setError(null);
-        
+        setLoading(true);
         const walletAddress = getWalletAddress();
-        
         if (!walletAddress) {
           console.error('No wallet address found');
-          setError('Please connect your wallet to view orders');
           return;
         }
-        
-        const ordersData = await getUserOrders(walletAddress);
-        setOrders(ordersData);
+        const userOrders = await getUserOrders(walletAddress);
+        setOrders(userOrders);
       } catch (error) {
         console.error('Error fetching orders:', error);
-        setError('Failed to load orders. Please try again later.');
       } finally {
-        setIsLoading(false);
+        setLoading(false);
       }
     };
-    
-    getOrders();
-    
-    // Refresh orders every 10 seconds
-    const interval = setInterval(getOrders, 10000);
-    
+
+    fetchOrders();
+    // Set up polling every 10 seconds
+    const interval = setInterval(fetchOrders, 10000);
     return () => clearInterval(interval);
   }, []);
-
-  const filteredOrders = orders.filter(order => {
-    if (statusFilter !== 'all' && order.status !== statusFilter) return false;
-    if (typeFilter !== 'all' && order.order_type !== typeFilter) return false;
-    return true;
-  });
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -80,6 +65,12 @@ export function UserOrders() {
         return null;
     }
   };
+
+  const filteredOrders = orders.filter(order => {
+    const statusMatch = statusFilter === 'all' || order.status === statusFilter;
+    const typeMatch = typeFilter === 'all' || order.order_type === typeFilter;
+    return statusMatch && typeMatch;
+  });
 
   return (
     <Card>
@@ -115,29 +106,25 @@ export function UserOrders() {
         </div>
       </CardHeader>
       <CardContent>
-        {isLoading ? (
-          <div className="h-32 flex items-center justify-center">
-            <Loader className="h-8 w-8 animate-spin text-muted-foreground" />
-          </div>
-        ) : error ? (
-          <div className="h-32 flex items-center justify-center text-red-500">
-            {error}
+        {loading ? (
+          <div className="flex items-center justify-center h-[200px]">
+            <Loader className="h-6 w-6 animate-spin" />
           </div>
         ) : filteredOrders.length === 0 ? (
-          <div className="h-32 flex items-center justify-center text-muted-foreground">
-            No order history
+          <div className="text-center text-muted-foreground py-8">
+            No orders found
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-4">
             {filteredOrders.map((order) => (
               <div 
-                key={order.id} 
-                className="p-3 border rounded-lg hover:bg-accent/50 transition-colors"
+                key={order.id}
+                className="p-4 rounded-lg border bg-card"
               >
                 <div className="flex justify-between items-center mb-2">
                   <div className="flex items-center gap-2">
                     <div className="font-medium">{order.market}</div>
-                    {getStatusIcon(order.status || 'pending')}
+                    {getStatusIcon(order.status)}
                   </div>
                   <div className="flex items-center gap-2">
                     <div 
@@ -156,12 +143,12 @@ export function UserOrders() {
                       {order.position_type}
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      {order.order_type || 'market'}
+                      {order.order_type}
                     </div>
                   </div>
                 </div>
                 
-                <div className="grid grid-cols-2 gap-2 text-sm">
+                <div className="space-y-1 text-sm">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Amount:</span>
                     <span className="font-mono">{order.amount.toFixed(4)}</span>

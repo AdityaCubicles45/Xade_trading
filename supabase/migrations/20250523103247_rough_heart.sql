@@ -19,7 +19,9 @@
       - `position_type` (text, 'Buy' or 'Sell')
       - `amount` (float)
       - `entry_price` (float)
-      - `timestamp` (timestamp)
+      - `order_type` (text, 'market' or 'limit')
+      - `status` (text, 'pending', 'filled', or 'cancelled')
+      - `created_at` (timestamp)
 
     - `active_positions`
       - `id` (uuid, primary key)
@@ -40,6 +42,7 @@
 -- Create users table
 CREATE TABLE IF NOT EXISTS users (
   id uuid PRIMARY KEY,
+  wallet_address text UNIQUE NOT NULL,
   email text,
   username text NOT NULL,
   tier text NOT NULL DEFAULT 'basic',
@@ -49,6 +52,9 @@ CREATE TABLE IF NOT EXISTS users (
   created_at timestamptz DEFAULT now()
 );
 
+-- Create index on wallet_address for faster lookups
+CREATE INDEX IF NOT EXISTS users_wallet_address_idx ON users(wallet_address);
+
 -- Create orders table
 CREATE TABLE IF NOT EXISTS orders (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -57,7 +63,9 @@ CREATE TABLE IF NOT EXISTS orders (
   position_type text NOT NULL CHECK (position_type IN ('Buy', 'Sell')),
   amount float NOT NULL,
   entry_price float NOT NULL,
-  timestamp timestamptz DEFAULT now()
+  order_type text NOT NULL DEFAULT 'market' CHECK (order_type IN ('market', 'limit')),
+  status text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'filled', 'cancelled')),
+  created_at timestamptz DEFAULT now()
 );
 
 -- Create active_positions table

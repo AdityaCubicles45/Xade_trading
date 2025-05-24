@@ -22,12 +22,15 @@ export function CrossmintLoginButton({
     setIsLoading(true);
     
     try {
-      // In a real implementation, this would be handled by the Crossmint SDK
-      // For demo purposes, we're mocking the wallet authentication
-      const mockWalletAddress = '0x' + Math.random().toString(16).substring(2, 14);
+      // Generate a mock wallet address for development
+      const mockWalletAddress = '0x' + Array(40).fill(0).map(() => Math.floor(Math.random() * 16).toString(16)).join('');
       
-      // Initialize user in Supabase
-      await initializeUser(mockWalletAddress);
+      // Initialize user in Supabase with demo balance
+      const user = await initializeUser(mockWalletAddress);
+      
+      if (!user) {
+        throw new Error('Failed to initialize user');
+      }
       
       // Store authentication in localStorage
       localStorage.setItem('walletAddress', mockWalletAddress);
@@ -46,11 +49,11 @@ export function CrossmintLoginButton({
     <Button 
       variant={variant} 
       size={size}
-      onClick={handleLogin}
       disabled={isLoading}
+      onClick={handleLogin}
     >
       <Wallet className="mr-2 h-4 w-4" />
-      {isLoading ? 'Connecting...' : 'Connect Wallet'}
+      {isLoading ? 'Connecting...' : 'Connect Wallet (Demo)'}
     </Button>
   );
 }
