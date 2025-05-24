@@ -33,14 +33,13 @@ export function TradingViewChart({
   const [chart, setChart] = useState<any>(null);
 
   useEffect(() => {
-    if (!chartContainerRef.current) return;
-
     const script = document.createElement('script');
     script.src = 'https://s3.tradingview.com/tv.js';
     script.async = true;
     document.body.appendChild(script);
 
     script.onload = () => {
+      if (!chartContainerRef.current) return;
       const tvWidget = new window.TradingView.widget({
         width: '100%',
         height: height,
@@ -126,35 +125,6 @@ export function TradingViewChart({
       });
 
       setChart(tvWidget);
-
-      // Add buy/sell points
-      buyPoints.forEach(point => {
-        tvWidget.chart().createShape({
-          time: point.timestamp,
-          price: point.price,
-          color: '#27ae60',
-          text: 'BUY',
-          backgroundColor: '#27ae60',
-          borderVisible: false,
-          textFontSize: 12,
-          textFontWeight: 'bold',
-          id: point.id
-        });
-      });
-
-      sellPoints.forEach(point => {
-        tvWidget.chart().createShape({
-          time: point.timestamp,
-          price: point.price,
-          color: '#e74c3c',
-          text: 'SELL',
-          backgroundColor: '#e74c3c',
-          borderVisible: false,
-          textFontSize: 12,
-          textFontWeight: 'bold',
-          id: point.id
-        });
-      });
     };
 
     return () => {
