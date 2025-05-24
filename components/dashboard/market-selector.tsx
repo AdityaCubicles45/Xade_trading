@@ -18,15 +18,16 @@ import { Button } from '@/components/ui/button';
 import { Check, ChevronsUpDown, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Token } from '@/lib/types';
-import { formatPercentage } from '@/lib/api';
+import { formatPercentage, formatPrice } from '@/lib/api';
 
 interface MarketSelectorProps {
   tokens: Token[];
   selectedMarket: string;
   onMarketChange: (market: string) => void;
+  currentPrice: number;
 }
 
-export function MarketSelector({ tokens, selectedMarket, onMarketChange }: MarketSelectorProps) {
+export function MarketSelector({ tokens, selectedMarket, onMarketChange, currentPrice }: MarketSelectorProps) {
   const [open, setOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
   const [selectedToken, setSelectedToken] = useState<Token | null>(null);
@@ -127,7 +128,7 @@ export function MarketSelector({ tokens, selectedMarket, onMarketChange }: Marke
       {selectedToken && (
         <div className="flex items-center space-x-4">
           <div className="flex flex-col">
-            <span className="font-mono text-2xl">${selectedToken.current_price.toLocaleString()}</span>
+            <span className="font-mono text-2xl">${formatPrice(currentPrice)}</span>
             <span 
               className={cn(
                 "text-xs font-mono",

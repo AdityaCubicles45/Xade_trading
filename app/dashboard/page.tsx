@@ -12,7 +12,7 @@ import { UserPositions } from '@/components/dashboard/user-positions';
 import { UserOrders } from '@/components/dashboard/user-orders';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Token } from '@/lib/types';
-import { fetchTopTokens, fetchCurrentPrice } from '@/lib/api';
+import { fetchTopTokens, initializeWebSocket, closeWebSocket } from '@/lib/api';
 import { isAuthenticated, getWalletAddress } from '@/lib/auth';
 import TokenSelect from '@/components/ui/token-select';
 import { TradeButtons } from '@/components/dashboard/trade-buttons';
@@ -52,14 +52,36 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    const getPrice = async () => {
-      if (selectedMarket) {
-        const price = await fetchCurrentPrice(selectedMarket);
+    // Initialize WebSocket for all tokens
+    if (tokens.length > 0) {
+      const symbols = tokens.map(token => token.id);
+      initializeWebSocket(symbols);
+    }
+
+    // Listen for price updates
+    const handlePriceUpdate = (event: CustomEvent) => {
+      const { symbol, price } = event.detail;
+      if (selectedToken?.id === symbol) {
         setCurrentPrice(price);
       }
     };
-    getPrice();
-  }, [selectedMarket]);
+
+    window.addEventListener('priceUpdate', handlePriceUpdate as EventListener);
+
+    // Cleanup WebSocket connection and event listener
+    return () => {
+      window.removeEventListener('priceUpdate', handlePriceUpdate as EventListener);
+      closeWebSocket();
+    };
+  }, [tokens, selectedToken]);
+
+  useEffect(() => {
+    // Update selected token when market changes
+    const token = tokens.find(t => `${t.symbol}USDT` === selectedMarket);
+    if (token) {
+      setSelectedToken(token);
+    }
+  }, [selectedMarket, tokens]);
 
   // If not authenticated and on the client, redirect to home
   if (isClient && !isAuthenticated()) {
@@ -106,6 +128,7 @@ export default function DashboardPage() {
               tokens={tokens} 
               selectedMarket={selectedMarket} 
               onMarketChange={handleMarketChange}
+              currentPrice={currentPrice}
             />
           </div>
           
@@ -135,21 +158,7 @@ export default function DashboardPage() {
             </div>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              {selectedToken && (
-                <TradeButtons 
-                  selectedToken={selectedToken}
-                  currentPrice={currentPrice}
-                />
-              )}
-            </div>
-            <div>
-              {selectedToken && (
-                <OrderBook market={selectedToken.id} />
-              )}
-            </div>
-          </div>
+
           
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <div>

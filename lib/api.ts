@@ -124,6 +124,45 @@ export const fetchTokenPrice = async (symbol: string): Promise<number | null> =>
 };
 
 // Get market data for a specific token
+let ws: WebSocket | null = null;
+
+export const initializeWebSocket = (symbols: string[]) => {
+  // Close existing connection if any
+  if (ws) {
+    ws.close();
+  }
+
+  // Create streams string for all symbols
+  const streams = symbols.map(symbol => `${symbol.toLowerCase()}@ticker`).join('/');
+  ws = new WebSocket(`wss://stream.binance.com:9443/stream?streams=${streams}`);
+
+  // Handle WebSocket messages
+  ws.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    if (data.data) {
+      // Update the parent component with the new price
+      if (typeof window !== 'undefined') {
+        const event = new CustomEvent('priceUpdate', {
+          detail: {
+            symbol: data.data.s,
+            price: parseFloat(data.data.c)
+          }
+        });
+        window.dispatchEvent(event);
+      }
+    }
+  };
+
+  return ws;
+};
+
+export const closeWebSocket = () => {
+  if (ws) {
+    ws.close();
+    ws = null;
+  }
+};
+
 export const fetchMarketData = async (symbol: string): Promise<Market | null> => {
   try {
     const response = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=${symbol}`);
