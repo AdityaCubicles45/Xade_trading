@@ -285,7 +285,14 @@ export const getUserPositions = async (walletAddress: string): Promise<Position[
       return [];
     }
     
-    return data as Position[];
+    // Parse numeric values from strings
+    return (data as Position[]).map(position => ({
+      ...position,
+      amount: parseFloat(position.amount as unknown as string),
+      entry_price: parseFloat(position.entry_price as unknown as string),
+      current_price: parseFloat(position.current_price as unknown as string),
+      pnl: parseFloat(position.pnl as unknown as string)
+    }));
   } catch (error) {
     console.error('Error in getUserPositions:', error);
     return [];

@@ -34,7 +34,19 @@ export function UserPositions() {
         return;
       }
       
+      console.log('Fetching positions for wallet:', walletAddress);
       const positionsData = await getUserPositions(walletAddress);
+      console.log('Received positions data:', positionsData);
+      
+      if (positionsData.length > 0) {
+        console.log('First position details:', {
+          amount: positionsData[0].amount,
+          entry_price: positionsData[0].entry_price,
+          current_price: positionsData[0].current_price,
+          pnl: positionsData[0].pnl
+        });
+      }
+      
       setPositions(positionsData);
     } catch (error) {
       console.error('Error fetching positions:', error);

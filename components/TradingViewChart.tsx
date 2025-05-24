@@ -46,10 +46,19 @@ export function TradingViewChart({
             'RSI@tv-basicstudies',
             'MASimple@tv-basicstudies',
             'MACD@tv-basicstudies',
+            'Volume@tv-basicstudies',
+            'BB@tv-basicstudies',
+            'StochasticRSI@tv-basicstudies',
+            'EMA@tv-basicstudies',
+            'IchimokuCloud@tv-basicstudies',
           ],
           show_popup_button: true,
           popup_width: '1000',
           popup_height: '650',
+          withdateranges: true,
+          hide_side_toolbar: false,
+          hide_top_toolbar: false,
+          studies_overrides: {},
         });
       }
     };

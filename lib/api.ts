@@ -215,3 +215,15 @@ export const formatVolume = (volume: number): string => {
     return `$${volume.toFixed(2)}`;
   }
 };
+
+export const fetchCurrentPrice = async (symbol: string): Promise<number> => {
+  try {
+    const response = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${symbol}`);
+    if (!response.ok) throw new Error('Failed to fetch price');
+    const data = await response.json();
+    return parseFloat(data.price);
+  } catch (error) {
+    console.error('Error fetching current price:', error);
+    return 0;
+  }
+};

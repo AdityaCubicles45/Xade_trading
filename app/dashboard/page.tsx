@@ -12,7 +12,7 @@ import { UserPositions } from '@/components/dashboard/user-positions';
 import { UserOrders } from '@/components/dashboard/user-orders';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Token } from '@/lib/types';
-import { fetchTopTokens } from '@/lib/api';
+import { fetchTopTokens, fetchCurrentPrice } from '@/lib/api';
 import { isAuthenticated, getWalletAddress } from '@/lib/auth';
 import { TokenSelect } from '@/components/ui/token-select';
 import { TradeButtons } from '@/components/dashboard/trade-buttons';
@@ -50,6 +50,16 @@ export default function DashboardPage() {
 
     getTokens();
   }, []);
+
+  useEffect(() => {
+    const getPrice = async () => {
+      if (selectedMarket) {
+        const price = await fetchCurrentPrice(selectedMarket);
+        setCurrentPrice(price);
+      }
+    };
+    getPrice();
+  }, [selectedMarket]);
 
   // If not authenticated and on the client, redirect to home
   if (isClient && !isAuthenticated()) {
