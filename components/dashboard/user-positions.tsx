@@ -23,32 +23,32 @@ export function UserPositions() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchPositions = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        const walletAddress = getWalletAddress();
-        if (!walletAddress) {
-          setError('Please connect your wallet to view positions');
-          return;
-        }
-        
-        const positionsData = await getUserPositions(walletAddress);
-        setPositions(positionsData);
-      } catch (error) {
-        console.error('Error fetching positions:', error);
-        setError('Failed to load positions. Please try again later.');
-      } finally {
-        setLoading(false);
+  const fetchPositions = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const walletAddress = getWalletAddress();
+      if (!walletAddress) {
+        setError('Please connect your wallet to view positions');
+        return;
       }
-    };
-    
+      
+      const positionsData = await getUserPositions(walletAddress);
+      setPositions(positionsData);
+    } catch (error) {
+      console.error('Error fetching positions:', error);
+      setError('Failed to load positions. Please try again later.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchPositions();
     
-    // Refresh positions every 5 seconds
-    const interval = setInterval(fetchPositions, 5000);
+    // Refresh positions every 10 seconds
+    const interval = setInterval(fetchPositions, 10000);
     
     return () => clearInterval(interval);
   }, []);
@@ -68,11 +68,7 @@ export function UserPositions() {
         });
         
         // Refresh positions
-        const walletAddress = getWalletAddress();
-        if (walletAddress) {
-          const positionsData = await getUserPositions(walletAddress);
-          setPositions(positionsData);
-        }
+        fetchPositions();
       } else {
         toast({
           title: "Failed to close position",
@@ -127,7 +123,7 @@ export function UserPositions() {
                   </Button>
                 </div>
                 
-                <div className="space-y-1 text-sm">
+                <div className="space-y-2">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Amount:</span>
                     <span className="font-mono">{position.amount.toFixed(4)}</span>

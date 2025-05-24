@@ -6,8 +6,6 @@ import { Wallet } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { initializeUser } from '@/lib/auth';
 
-// Mock component as we can't import the actual Crossmint SDK
-// In a real implementation, you would use @crossmint/client-sdk-react-ui
 export function CrossmintLoginButton({ 
   variant = "default", 
   size = "default"
@@ -22,7 +20,7 @@ export function CrossmintLoginButton({
     setIsLoading(true);
     
     try {
-      // Generate a mock wallet address for development
+      // For now, use a mock wallet address until Crossmint SDK is properly set up
       const mockWalletAddress = '0x' + Array(40).fill(0).map(() => Math.floor(Math.random() * 16).toString(16)).join('');
       
       // Initialize user in Supabase with demo balance

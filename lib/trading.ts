@@ -177,14 +177,19 @@ export const createPosition = async (
   entryPrice: number
 ): Promise<Position | null> => {
   try {
+    // Set current price to entry price initially
+    const currentPrice = entryPrice;
+    // Calculate initial PnL (should be 0 for new position)
+    const pnl = 0;
+
     const newPosition = {
       id: uuidv4(),
       user_id: userId,
       market,
       amount,
       entry_price: entryPrice,
-      current_price: entryPrice, // Set current price to entry price initially
-      pnl: 0, // Initialize PnL to 0
+      current_price: currentPrice,
+      pnl: pnl,
       is_open: true
     };
     
@@ -199,7 +204,14 @@ export const createPosition = async (
       return null;
     }
     
-    return data as Position;
+    // Return the position with all values properly set
+    return {
+      ...data,
+      amount: parseFloat(data.amount as unknown as string),
+      entry_price: parseFloat(data.entry_price as unknown as string),
+      current_price: parseFloat(data.current_price as unknown as string),
+      pnl: parseFloat(data.pnl as unknown as string)
+    } as Position;
   } catch (error) {
     console.error('Error in createPosition:', error);
     return null;

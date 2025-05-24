@@ -9,7 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@crossmint/client-sdk-react-ui": "^1.1.1",
+    "@crossmint/client-sdk-react-ui": "^1.19.18",
     "@hookform/resolvers": "^3.9.0",
     "@next/swc-wasm-nodejs": "13.5.1",
     "@radix-ui/react-accordion": "^1.2.0",
