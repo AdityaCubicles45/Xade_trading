@@ -19,14 +19,14 @@ import {
 import { Token } from '@/lib/types';
 import { fetchTopTokens, getPriceWebSocketUrl, formatPrice } from '@/lib/api';
 
-interface TokenSelectProps {
+export interface TokenSelectProps {
+  tokens: Token[];
   onSelect: (token: Token) => void;
   selectedToken?: Token;
 }
 
-export function TokenSelect({ onSelect, selectedToken }: TokenSelectProps) {
+const TokenSelect = ({ tokens, onSelect, selectedToken }: TokenSelectProps) => {
   const [open, setOpen] = useState(false);
-  const [tokens, setTokens] = useState<Token[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [livePrices, setLivePrices] = useState<Record<string, number>>({});
@@ -34,14 +34,14 @@ export function TokenSelect({ onSelect, selectedToken }: TokenSelectProps) {
   const wsRef = useRef<WebSocket | null>(null);
 
   // Initialize WebSocket connection for all tokens
-  const initializeWebSocket = useCallback((tokens: Token[]) => {
+  const initializeWebSocket = useCallback((tokenList: Token[]) => {
     // Close existing connection if any
     if (wsRef.current) {
       wsRef.current.close();
     }
 
     // Create streams string for all tokens
-    const streams = tokens.map(token => `${token.id.toLowerCase()}@ticker`).join('/');
+    const streams = tokenList.map(token => `${token.id.toLowerCase()}@ticker`).join('/');
     const ws = new WebSocket(`wss://stream.binance.com:9443/stream?streams=${streams}`);
     
     ws.onmessage = (event) => {
@@ -66,33 +66,21 @@ export function TokenSelect({ onSelect, selectedToken }: TokenSelectProps) {
     return ws;
   }, []);
 
-  // Fetch initial token data
+  // Initialize live prices
   useEffect(() => {
-    const getTokens = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const tokensData = await fetchTopTokens();
-        setTokens(tokensData);
-        
-        // Initialize live prices
-        const initialPrices: Record<string, number> = {};
-        tokensData.forEach(token => {
-          initialPrices[token.id] = token.current_price;
-        });
-        setLivePrices(initialPrices);
+    setLoading(true);
+    setError(null);
+    
+    // Initialize live prices
+    const initialPrices: Record<string, number> = {};
+    tokens.forEach(token => {
+      initialPrices[token.id] = token.current_price;
+    });
+    setLivePrices(initialPrices);
 
-        // Initialize WebSocket connection
-        initializeWebSocket(tokensData);
-      } catch (error) {
-        console.error('Error fetching tokens:', error);
-        setError('Failed to load tokens');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    getTokens();
+    // Initialize WebSocket connection
+    initializeWebSocket(tokens);
+    setLoading(false);
 
     // Cleanup WebSocket connection
     return () => {
@@ -100,7 +88,7 @@ export function TokenSelect({ onSelect, selectedToken }: TokenSelectProps) {
         wsRef.current.close();
       }
     };
-  }, [initializeWebSocket]);
+  }, [tokens, initializeWebSocket]);
 
   // Filter tokens based on search query
   const filteredTokens = tokens.filter(token => 
@@ -199,4 +187,6 @@ export function TokenSelect({ onSelect, selectedToken }: TokenSelectProps) {
       </PopoverContent>
     </Popover>
   );
-} 
+}
+
+export default TokenSelect;

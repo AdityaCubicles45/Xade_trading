@@ -7,6 +7,13 @@ interface TradingViewChartProps {
   theme?: 'light' | 'dark';
   width?: string | number;
   height?: string | number;
+  interval?: string;
+  showDrawingTools?: boolean;
+  showIndicators?: boolean;
+  showVolume?: boolean;
+  showTimeScale?: boolean;
+  showToolbar?: boolean;
+  studies?: string[];
 }
 
 declare global {
@@ -20,6 +27,22 @@ export function TradingViewChart({
   theme = 'dark',
   width = '100%',
   height = 500,
+  interval = 'D',
+  showDrawingTools = true,
+  showIndicators = true,
+  showVolume = true,
+  showTimeScale = true,
+  showToolbar = true,
+  studies = [
+    'RSI@tv-basicstudies',
+    'MASimple@tv-basicstudies',
+    'MACD@tv-basicstudies',
+    'Volume@tv-basicstudies',
+    'BB@tv-basicstudies',
+    'StochasticRSI@tv-basicstudies',
+    'EMA@tv-basicstudies',
+    'IchimokuCloud@tv-basicstudies',
+  ],
 }: TradingViewChartProps) {
   const container = useRef<HTMLDivElement>(null);
 
@@ -32,7 +55,7 @@ export function TradingViewChart({
         new window.TradingView.widget({
           container_id: container.current.id,
           symbol: symbol,
-          interval: 'D',
+          interval: interval,
           theme: theme,
           style: '1',
           locale: 'en',
@@ -42,22 +65,13 @@ export function TradingViewChart({
           save_image: false,
           height: height,
           width: width,
-          studies: [
-            'RSI@tv-basicstudies',
-            'MASimple@tv-basicstudies',
-            'MACD@tv-basicstudies',
-            'Volume@tv-basicstudies',
-            'BB@tv-basicstudies',
-            'StochasticRSI@tv-basicstudies',
-            'EMA@tv-basicstudies',
-            'IchimokuCloud@tv-basicstudies',
-          ],
+          studies: studies,
           show_popup_button: true,
           popup_width: '1000',
           popup_height: '650',
           withdateranges: true,
-          hide_side_toolbar: false,
-          hide_top_toolbar: false,
+          hide_side_toolbar: !showDrawingTools,
+          hide_top_toolbar: !showToolbar,
           studies_overrides: {},
         });
       }
@@ -67,7 +81,7 @@ export function TradingViewChart({
     return () => {
       document.head.removeChild(script);
     };
-  }, [symbol, theme, width, height]);
+  }, [symbol, theme, width, height, interval, showDrawingTools, showToolbar, studies]);
 
   return (
     <div
@@ -77,4 +91,4 @@ export function TradingViewChart({
       style={{ height: typeof height === 'number' ? `${height}px` : height }}
     />
   );
-} 
+}

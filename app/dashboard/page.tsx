@@ -14,7 +14,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Token } from '@/lib/types';
 import { fetchTopTokens, fetchCurrentPrice } from '@/lib/api';
 import { isAuthenticated, getWalletAddress } from '@/lib/auth';
-import { TokenSelect } from '@/components/ui/token-select';
+import TokenSelect from '@/components/ui/token-select';
 import { TradeButtons } from '@/components/dashboard/trade-buttons';
 
 export default function DashboardPage() {
@@ -27,7 +27,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     setIsClient(true);
-    
+
     // Check authentication
     if (!isAuthenticated()) {
       console.log('User not authenticated, redirecting to home...');

@@ -80,7 +80,6 @@ export function MarketSelector({ tokens, selectedMarket, onMarketChange }: Marke
               value={searchValue}
               onValueChange={setSearchValue}
               className="h-9"
-              icon={<Search className="h-4 w-4" />}
             />
             <CommandList>
               <CommandEmpty>No markets found.</CommandEmpty>
