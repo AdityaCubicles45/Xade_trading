@@ -16,19 +16,29 @@ import { Slider } from '@/components/ui/slider';
 import { useToast } from '@/hooks/use-toast';
 import { getCurrentUser } from '@/lib/auth';
 import { createOrder } from '@/lib/trading';
+import { Loader } from 'lucide-react';
 
 interface TradePanelProps {
   market: string;
+  currentPrice?: number;
 }
 
-export function TradePanel({ market }: TradePanelProps) {
+export function TradePanel({ market, currentPrice = 0 }: TradePanelProps) {
   const { toast } = useToast();
   const [amount, setAmount] = useState<number>(0);
   const [orderType, setOrderType] = useState<'market' | 'limit'>('market');
-  const [price, setPrice] = useState<number>(50000); // Mock price
+  const [price, setPrice] = useState<number>(currentPrice);
   const [total, setTotal] = useState<number>(0);
-  const [balance, setBalance] = useState<number>(10000);
+  const [balance, setBalance] = useState<number>(0);
   const [walletAddress, setWalletAddress] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(false);
+  
+  useEffect(() => {
+    // Update price when currentPrice changes
+    if (currentPrice > 0) {
+      setPrice(currentPrice);
+    }
+  }, [currentPrice]);
   
   useEffect(() => {
     // Calculate total based on amount and price
@@ -66,7 +76,7 @@ export function TradePanel({ market }: TradePanelProps) {
     setAmount(newAmount);
   };
 
-  const handleBuy = async () => {
+  const handleOrder = async (positionType: 'Buy' | 'Sell') => {
     if (amount <= 0) {
       toast({
         title: "Invalid amount",
@@ -76,7 +86,7 @@ export function TradePanel({ market }: TradePanelProps) {
       return;
     }
     
-    if (total > balance) {
+    if (positionType === 'Buy' && total > balance) {
       toast({
         title: "Insufficient balance",
         description: "You don't have enough balance to place this order",
@@ -85,66 +95,26 @@ export function TradePanel({ market }: TradePanelProps) {
       return;
     }
     
-    try {
-      const result = await createOrder(
-        walletAddress,
-        market,
-        'Buy',
-        amount,
-        price
-      );
-      
-      if (result) {
-        toast({
-          title: "Order placed successfully",
-          description: `Bought ${amount.toFixed(4)} ${market} at $${price.toFixed(2)}`,
-        });
-        
-        // Refresh balance
-        const user = await getCurrentUser(walletAddress);
-        if (user) {
-          setBalance(user.current_balance);
-        }
-      } else {
-        toast({
-          title: "Failed to place order",
-          description: "Please try again later",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Error placing order",
-        description: "An unexpected error occurred",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleSell = async () => {
-    if (amount <= 0) {
-      toast({
-        title: "Invalid amount",
-        description: "Please enter a valid amount",
-        variant: "destructive",
-      });
-      return;
-    }
+    setIsLoading(true);
     
     try {
       const result = await createOrder(
         walletAddress,
         market,
-        'Sell',
+        positionType,
         amount,
-        price
+        price,
+        orderType
       );
       
       if (result) {
         toast({
           title: "Order placed successfully",
-          description: `Sold ${amount.toFixed(4)} ${market} at $${price.toFixed(2)}`,
+          description: `${positionType} ${amount.toFixed(4)} ${market} at $${price.toFixed(2)}`,
         });
+        
+        // Reset form
+        setAmount(0);
         
         // Refresh balance
         const user = await getCurrentUser(walletAddress);
@@ -164,6 +134,8 @@ export function TradePanel({ market }: TradePanelProps) {
         description: "An unexpected error occurred",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -211,40 +183,31 @@ export function TradePanel({ market }: TradePanelProps) {
                 />
               </div>
               
-              <div>
-                <Label htmlFor="price">Price</Label>
-                <Input
-                  id="price"
-                  type="number"
-                  value={price}
-                  readOnly
-                  className="font-mono"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-xs text-muted-foreground">Price</Label>
+                  <div className="font-mono text-lg">${price.toFixed(2)}</div>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Total</Label>
+                  <div className="font-mono text-lg">${total.toFixed(2)}</div>
+                </div>
               </div>
               
-              <div>
-                <Label htmlFor="total">Total</Label>
-                <Input
-                  id="total"
-                  type="number"
-                  value={total.toFixed(2)}
-                  readOnly
-                  className="font-mono"
-                />
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4 mt-4">
-                <Button 
-                  className="w-full bg-green-500 hover:bg-green-600"
-                  onClick={handleBuy}
+              <div className="grid grid-cols-2 gap-4">
+                <Button
+                  onClick={() => handleOrder('Buy')}
+                  disabled={isLoading}
+                  className="bg-green-500 hover:bg-green-600"
                 >
-                  Buy
+                  {isLoading ? <Loader className="h-4 w-4 animate-spin" /> : 'Buy'}
                 </Button>
-                <Button 
-                  className="w-full bg-red-500 hover:bg-red-600"
-                  onClick={handleSell}
+                <Button
+                  onClick={() => handleOrder('Sell')}
+                  disabled={isLoading}
+                  variant="destructive"
                 >
-                  Sell
+                  {isLoading ? <Loader className="h-4 w-4 animate-spin" /> : 'Sell'}
                 </Button>
               </div>
             </div>
@@ -257,8 +220,8 @@ export function TradePanel({ market }: TradePanelProps) {
                 <Input
                   id="limit-price"
                   type="number"
-                  value={price}
-                  onChange={(e) => setPrice(parseFloat(e.target.value))}
+                  value={price || ''}
+                  onChange={(e) => setPrice(parseFloat(e.target.value) || 0)}
                   className="font-mono"
                   step="0.01"
                   min="0"
@@ -294,29 +257,31 @@ export function TradePanel({ market }: TradePanelProps) {
                 />
               </div>
               
-              <div>
-                <Label htmlFor="limit-total">Total</Label>
-                <Input
-                  id="limit-total"
-                  type="number"
-                  value={total.toFixed(2)}
-                  readOnly
-                  className="font-mono"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-xs text-muted-foreground">Price</Label>
+                  <div className="font-mono text-lg">${price.toFixed(2)}</div>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Total</Label>
+                  <div className="font-mono text-lg">${total.toFixed(2)}</div>
+                </div>
               </div>
               
-              <div className="grid grid-cols-2 gap-4 mt-4">
-                <Button 
-                  className="w-full bg-green-500 hover:bg-green-600"
-                  onClick={handleBuy}
+              <div className="grid grid-cols-2 gap-4">
+                <Button
+                  onClick={() => handleOrder('Buy')}
+                  disabled={isLoading}
+                  className="bg-green-500 hover:bg-green-600"
                 >
-                  Buy
+                  {isLoading ? <Loader className="h-4 w-4 animate-spin" /> : 'Buy'}
                 </Button>
-                <Button 
-                  className="w-full bg-red-500 hover:bg-red-600"
-                  onClick={handleSell}
+                <Button
+                  onClick={() => handleOrder('Sell')}
+                  disabled={isLoading}
+                  variant="destructive"
                 >
-                  Sell
+                  {isLoading ? <Loader className="h-4 w-4 animate-spin" /> : 'Sell'}
                 </Button>
               </div>
             </div>

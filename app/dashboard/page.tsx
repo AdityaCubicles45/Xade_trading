@@ -6,7 +6,7 @@ import { DashboardHeader } from '@/components/dashboard/header';
 import { DashboardSidebar } from '@/components/dashboard/sidebar';
 import { MarketSelector } from '@/components/dashboard/market-selector';
 import { TradePanel } from '@/components/dashboard/trade-panel';
-import { PriceChart } from '@/components/dashboard/price-chart';
+import { TradingViewChart } from '@/components/TradingViewChart';
 import { OrderBook } from '@/components/dashboard/order-book';
 import { UserPositions } from '@/components/dashboard/user-positions';
 import { UserOrders } from '@/components/dashboard/user-orders';
@@ -120,9 +120,26 @@ export default function DashboardPage() {
             </div>
           </div>
           
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <div className="lg:col-span-2">
-              <PriceChart market={selectedMarket} />
+              <TradingViewChart 
+                symbol={selectedMarket}
+                theme="dark"
+                height={500}
+                interval="D"
+                showDrawingTools={true}
+                showIndicators={true}
+                showVolume={true}
+                showTimeScale={true}
+                showToolbar={true}
+                studies={[
+                  'RSI@tv-basicstudies',
+                  'MASimple@tv-basicstudies',
+                  'MACD@tv-basicstudies',
+                  'Volume@tv-basicstudies',
+                  'BB@tv-basicstudies'
+                ]}
+              />
             </div>
             <div>
               <OrderBook market={selectedMarket} />
@@ -131,7 +148,10 @@ export default function DashboardPage() {
           
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <div>
-              <TradePanel market={selectedMarket} />
+              <TradePanel 
+                market={selectedMarket} 
+                currentPrice={currentPrice}
+              />
             </div>
             <div>
               <UserPositions />

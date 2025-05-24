@@ -16,7 +16,9 @@ export interface Order {
   position_type: 'Buy' | 'Sell';
   amount: number;
   entry_price: number;
-  timestamp: string;
+  order_type: 'market' | 'limit';
+  status: 'pending' | 'filled' | 'cancelled';
+  created_at: string;
 }
 
 export interface Position {

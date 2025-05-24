@@ -9,22 +9,27 @@ export const createOrder = async (
   market: string,
   positionType: 'Buy' | 'Sell',
   amount: number,
-  entryPrice: number
+  entryPrice: number,
+  orderType: 'market' | 'limit' = 'market'
 ): Promise<Order | null> => {
   try {
-    const newOrder: Omit<Order, 'id'> & { id: string } = {
+    // Ensure all required fields are present and match the schema
+    const newOrder = {
       id: uuidv4(),
       user_id: userId,
       market,
       position_type: positionType,
-      amount,
-      entry_price: entryPrice,
-      timestamp: new Date().toISOString()
+      amount: amount.toString(), // Convert to string for numeric type
+      entry_price: entryPrice.toString(), // Convert to string for numeric type
+      order_type: orderType,
+      status: 'pending'
     };
     
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('orders')
-      .insert(newOrder);
+      .insert(newOrder)
+      .select()
+      .single();
     
     if (error) {
       console.error('Error creating order:', error);
@@ -41,7 +46,7 @@ export const createOrder = async (
     
     if (userError) {
       console.error('Error fetching user for balance update:', userError);
-      return newOrder;
+      return data as Order;
     }
     
     const newBalance = positionType === 'Buy' 
@@ -55,7 +60,7 @@ export const createOrder = async (
       await createPosition(userId, market, amount, entryPrice);
     }
     
-    return newOrder;
+    return data as Order;
   } catch (error) {
     console.error('Error in createOrder:', error);
     return null;
@@ -69,17 +74,45 @@ export const getUserOrders = async (userId: string): Promise<Order[]> => {
       .from('orders')
       .select('*')
       .eq('user_id', userId)
-      .order('timestamp', { ascending: false });
+      .order('created_at', { ascending: false });
     
     if (error) {
       console.error('Error fetching user orders:', error);
       return [];
     }
     
-    return data as Order[];
+    // Convert numeric strings back to numbers
+    return (data as Order[]).map(order => ({
+      ...order,
+      amount: parseFloat(order.amount as unknown as string),
+      entry_price: parseFloat(order.entry_price as unknown as string)
+    }));
   } catch (error) {
     console.error('Error in getUserOrders:', error);
     return [];
+  }
+};
+
+// Update order status
+export const updateOrderStatus = async (
+  orderId: string,
+  status: 'filled' | 'cancelled'
+): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('orders')
+      .update({ status })
+      .eq('id', orderId);
+    
+    if (error) {
+      console.error('Error updating order status:', error);
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error in updateOrderStatus:', error);
+    return false;
   }
 };
 
