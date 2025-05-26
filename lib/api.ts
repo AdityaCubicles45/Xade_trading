@@ -83,6 +83,48 @@ const TOKEN_IMAGE_IDS: { [key: string]: string } = {
   'KNC': 'kyber-network-crystal'
 };
 
+// Add user-related interfaces
+interface User {
+  id: string;
+  walletAddress: string;
+  balance: number;
+  tier: string;
+  createdAt: string;
+}
+
+// Add position-related interfaces
+interface Position {
+  id: string;
+  symbol: string;
+  side: 'LONG' | 'SHORT';
+  entryPrice: number;
+  currentPrice: number;
+  size: number;
+  leverage: number;
+  pnl: number;
+  pnlPercentage: number;
+  liquidationPrice: number;
+  createdAt: string;
+}
+
+// Add getCurrentUser function
+export const getCurrentUser = async (walletAddress: string): Promise<User | null> => {
+  try {
+    // For now, return a mock user
+    // In a real application, this would fetch from your backend
+    return {
+      id: '1',
+      walletAddress,
+      balance: 1000, // Default balance
+      tier: 'basic', // Default tier
+      createdAt: new Date().toISOString()
+    };
+  } catch (error) {
+    console.error('Error fetching current user:', error);
+    return null;
+  }
+};
+
 // Binance API Functions
 export const fetchTopTokens = async (limit: number = 300): Promise<Token[]> => {
   try {
@@ -319,5 +361,56 @@ export const fetchCurrentPrice = async (symbol: string): Promise<number> => {
   } catch (error) {
     console.error('Error fetching current price:', error);
     return 0;
+  }
+};
+
+// Add fetchPositions function
+export const fetchPositions = async (walletAddress: string): Promise<Position[]> => {
+  try {
+    // For now, return mock positions
+    // In a real application, this would fetch from your backend
+    return [
+      {
+        id: '1',
+        symbol: 'BTCUSDT',
+        side: 'LONG',
+        entryPrice: 50000,
+        currentPrice: 51000,
+        size: 0.1,
+        leverage: 10,
+        pnl: 100,
+        pnlPercentage: 2,
+        liquidationPrice: 45000,
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: '2',
+        symbol: 'ETHUSDT',
+        side: 'SHORT',
+        entryPrice: 3000,
+        currentPrice: 2900,
+        size: 1,
+        leverage: 5,
+        pnl: 100,
+        pnlPercentage: 3.33,
+        liquidationPrice: 3600,
+        createdAt: new Date().toISOString()
+      }
+    ];
+  } catch (error) {
+    console.error('Error fetching positions:', error);
+    return [];
+  }
+};
+
+// Add closePosition function
+export const closePosition = async (positionId: string): Promise<boolean> => {
+  try {
+    // For now, return mock success
+    // In a real application, this would call your backend
+    return true;
+  } catch (error) {
+    console.error('Error closing position:', error);
+    return false;
   }
 };

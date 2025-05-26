@@ -10,13 +10,20 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Position } from '@/lib/types';
-import { getUserPositions, closePosition } from '@/lib/trading';
 import { useToast } from '@/hooks/use-toast';
 import { formatPrice } from '@/lib/api';
 import { Loader } from 'lucide-react';
 import { getWalletAddress } from '@/lib/auth';
-import { getCurrentUser } from '@/lib/api';
+import { getCurrentUser, fetchPositions, closePosition } from '@/lib/api';
+
+interface Position {
+  id: string;
+  market: string;
+  amount: number;
+  entry_price: number;
+  current_price: number;
+  pnl: number;
+}
 
 export function UserPositions() {
   const { toast } = useToast();
@@ -27,48 +34,55 @@ export function UserPositions() {
   const lastFetchTimeRef = useRef<number>(0);
   const CACHE_DURATION = 60000; // 1 minute cache
 
-  useEffect(() => {
-    const fetchPositions = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+  const loadPositions = async () => {
+    try {
+      setLoading(true);
+      setError(null);
 
-        const walletAddress = localStorage.getItem('walletAddress');
-        if (!walletAddress) {
-          setError('No wallet address found');
-          return;
-        }
-
-        // Check if we need to fetch user data
-        const now = Date.now();
-        if (now - lastFetchTimeRef.current < CACHE_DURATION) {
-          return; // Use cached data
-        }
-
-        // Clear any existing timeout
-        if (userFetchTimeoutRef.current) {
-          clearTimeout(userFetchTimeoutRef.current);
-        }
-
-        // Set a new timeout to fetch user data
-        userFetchTimeoutRef.current = setTimeout(async () => {
-          const user = await getCurrentUser(walletAddress);
-          if (user) {
-            lastFetchTimeRef.current = now;
-            // Fetch positions logic here
-            // ... rest of your position fetching code
-          }
-        }, 1000); // Debounce for 1 second
-
-      } catch (error) {
-        console.error('Error fetching positions:', error);
-        setError('Failed to fetch positions');
-      } finally {
-        setLoading(false);
+      const walletAddress = localStorage.getItem('walletAddress');
+      if (!walletAddress) {
+        setError('No wallet address found');
+        return;
       }
-    };
 
-    fetchPositions();
+      // Check if we need to fetch user data
+      const now = Date.now();
+      if (now - lastFetchTimeRef.current < CACHE_DURATION) {
+        return; // Use cached data
+      }
+
+      // Clear any existing timeout
+      if (userFetchTimeoutRef.current) {
+        clearTimeout(userFetchTimeoutRef.current);
+      }
+
+      // Set a new timeout to fetch user data
+      userFetchTimeoutRef.current = setTimeout(async () => {
+        const user = await getCurrentUser(walletAddress);
+        if (user) {
+          lastFetchTimeRef.current = now;
+          const fetchedPositions = await fetchPositions(walletAddress);
+          setPositions(fetchedPositions.map(p => ({
+            id: p.id,
+            market: p.symbol,
+            amount: p.size,
+            entry_price: p.entryPrice,
+            current_price: p.currentPrice,
+            pnl: p.pnl
+          })));
+        }
+      }, 1000); // Debounce for 1 second
+
+    } catch (error) {
+      console.error('Error fetching positions:', error);
+      setError('Failed to fetch positions');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadPositions();
 
     return () => {
       if (userFetchTimeoutRef.current) {
@@ -83,7 +97,7 @@ export function UserPositions() {
       const position = positions.find(p => p.id === positionId);
       if (!position) return;
       
-      const result = await closePosition(positionId, position.current_price);
+      const result = await closePosition(positionId);
       
       if (result) {
         toast({
@@ -92,7 +106,7 @@ export function UserPositions() {
         });
         
         // Refresh positions
-        fetchPositions();
+        loadPositions();
       } else {
         toast({
           title: "Failed to close position",
