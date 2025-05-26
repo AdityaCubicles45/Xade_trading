@@ -159,7 +159,18 @@ export function PriceChart({ market }: PriceChartProps) {
 
           if (kline.x) {
             // Candle is closed
-            setCandles(prev => [...prev.slice(1), newCandle]);
+            setCandles(prev => {
+              const updatedCandles = [...prev];
+              // Find and update the existing candle or add a new one
+              const index = updatedCandles.findIndex(c => c.time === newCandle.time);
+              if (index !== -1) {
+                updatedCandles[index] = newCandle;
+              } else {
+                updatedCandles.push(newCandle);
+              }
+              // Keep only the last N candles based on the limit
+              return updatedCandles.slice(-selectedTimeframe.limit);
+            });
             setCurrentCandle(null);
           } else {
             // Candle is still forming
@@ -169,15 +180,34 @@ export function PriceChart({ market }: PriceChartProps) {
           // Update chart
           if (candlestickSeries) {
             if (kline.x) {
+              // For closed candles, update the existing data
               candlestickSeries.update(newCandle);
             } else {
-              candlestickSeries.update(newCandle);
+              // For forming candles, update the current candle
+              const allCandles = [...candles];
+              if (currentCandle) {
+                const index = allCandles.findIndex(c => c.time === currentCandle.time);
+                if (index !== -1) {
+                  allCandles[index] = newCandle;
+                } else {
+                  allCandles.push(newCandle);
+                }
+              } else {
+                allCandles.push(newCandle);
+              }
+              candlestickSeries.setData(allCandles);
             }
           }
         };
 
         ws.onerror = (error) => {
           console.error('WebSocket error:', error);
+          // Attempt to reconnect on error
+          setTimeout(() => {
+            if (wsRef.current === ws) {
+              initializeWebSocket();
+            }
+          }, 5000);
         };
 
         ws.onclose = () => {

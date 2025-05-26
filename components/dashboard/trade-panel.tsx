@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { 
   Card, 
   CardContent, 
@@ -32,6 +32,9 @@ export function TradePanel({ market, currentPrice = 0 }: TradePanelProps) {
   const [balance, setBalance] = useState<number>(0);
   const [walletAddress, setWalletAddress] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
+  const userFetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastFetchTimeRef = useRef<number>(0);
+  const CACHE_DURATION = 60000; // 1 minute cache
   
   useEffect(() => {
     // Update price when currentPrice changes
@@ -44,20 +47,40 @@ export function TradePanel({ market, currentPrice = 0 }: TradePanelProps) {
     // Calculate total based on amount and price
     setTotal(amount * price);
     
-    // Get user balance
+    // Get user balance with caching
     const getUser = async () => {
       const walletAddr = localStorage.getItem('walletAddress') || '';
       setWalletAddress(walletAddr);
       
       if (walletAddr) {
-        const user = await getCurrentUser(walletAddr);
-        if (user) {
-          setBalance(user.current_balance);
+        const now = Date.now();
+        if (now - lastFetchTimeRef.current < CACHE_DURATION) {
+          return; // Use cached data
         }
+
+        // Clear any existing timeout
+        if (userFetchTimeoutRef.current) {
+          clearTimeout(userFetchTimeoutRef.current);
+        }
+
+        // Set a new timeout to fetch user data
+        userFetchTimeoutRef.current = setTimeout(async () => {
+          const user = await getCurrentUser(walletAddr);
+          if (user) {
+            lastFetchTimeRef.current = now;
+            setBalance(user.current_balance);
+          }
+        }, 1000); // Debounce for 1 second
       }
     };
     
     getUser();
+
+    return () => {
+      if (userFetchTimeoutRef.current) {
+        clearTimeout(userFetchTimeoutRef.current);
+      }
+    };
   }, [amount, price]);
 
   const handleAmountChange = (value: string) => {
@@ -138,6 +161,7 @@ export function TradePanel({ market, currentPrice = 0 }: TradePanelProps) {
         const user = await getCurrentUser(walletAddress);
         if (user) {
           setBalance(user.current_balance);
+          lastFetchTimeRef.current = Date.now();
         }
       } else {
         toast({
@@ -279,14 +303,14 @@ export function TradePanel({ market, currentPrice = 0 }: TradePanelProps) {
                 <Button
                   onClick={() => handleOrder('Buy')}
                   disabled={isLoading}
-                  className="bg-green-500 hover:bg-green-600"
+                  className="bg-[#0ECB81] hover:bg-[#0ECB81]/90 text-white h-10 font-medium"
                 >
                   {isLoading ? <Loader className="h-4 w-4 animate-spin" /> : 'Buy'}
                 </Button>
                 <Button
                   onClick={() => handleOrder('Sell')}
                   disabled={isLoading}
-                  variant="destructive"
+                  className="bg-[#F6465D] hover:bg-[#F6465D]/90 text-white h-10 font-medium"
                 >
                   {isLoading ? <Loader className="h-4 w-4 animate-spin" /> : 'Sell'}
                 </Button>

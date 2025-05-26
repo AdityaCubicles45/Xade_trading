@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { redirect } from 'next/navigation';
 import { DashboardHeader } from '@/components/dashboard/header';
 import { DashboardSidebar } from '@/components/dashboard/sidebar';
 import { MarketSelector } from '@/components/dashboard/market-selector';
 import { TradePanel } from '@/components/dashboard/trade-panel';
-import { TradingViewChart } from '@/components/TradingViewChart';
+import { TradingViewChart } from '@/components/dashboard/tradingview-chart';
 import { OrderBook } from '@/components/dashboard/order-book';
 import { UserPositions } from '@/components/dashboard/user-positions';
 import { UserOrders } from '@/components/dashboard/user-orders';
@@ -24,6 +24,7 @@ export default function DashboardPage() {
   const [tokens, setTokens] = useState<Token[]>([]);
   const [selectedToken, setSelectedToken] = useState<Token | undefined>();
   const [currentPrice, setCurrentPrice] = useState<number>(0);
+  const priceUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     setIsClient(true);
@@ -58,11 +59,19 @@ export default function DashboardPage() {
       initializeWebSocket(symbols);
     }
 
-    // Listen for price updates
+    // Listen for price updates with debouncing
     const handlePriceUpdate = (event: CustomEvent) => {
       const { symbol, price } = event.detail;
       if (selectedToken?.id === symbol) {
-        setCurrentPrice(price);
+        // Clear any existing timeout
+        if (priceUpdateTimeoutRef.current) {
+          clearTimeout(priceUpdateTimeoutRef.current);
+        }
+        
+        // Set a new timeout to update the price
+        priceUpdateTimeoutRef.current = setTimeout(() => {
+          setCurrentPrice(price);
+        }, 100); // Debounce for 100ms
       }
     };
 
@@ -72,6 +81,9 @@ export default function DashboardPage() {
     return () => {
       window.removeEventListener('priceUpdate', handlePriceUpdate as EventListener);
       closeWebSocket();
+      if (priceUpdateTimeoutRef.current) {
+        clearTimeout(priceUpdateTimeoutRef.current);
+      }
     };
   }, [tokens, selectedToken]);
 
@@ -133,7 +145,7 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
             <div className="lg:col-span-3 flex flex-col gap-4">
               <div className="h-[500px]">
-                <TradingViewChart />
+                <TradingViewChart symbol={selectedMarket} />
               </div>
               <div className="grid grid-cols-2 gap-4">  {/* Positions and orders side by side */}
                 <div className="h-[300px]">

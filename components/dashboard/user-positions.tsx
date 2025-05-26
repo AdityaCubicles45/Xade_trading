@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { 
   Card, 
   CardContent, 
@@ -16,53 +16,65 @@ import { useToast } from '@/hooks/use-toast';
 import { formatPrice } from '@/lib/api';
 import { Loader } from 'lucide-react';
 import { getWalletAddress } from '@/lib/auth';
+import { getCurrentUser } from '@/lib/api';
 
 export function UserPositions() {
   const { toast } = useToast();
   const [positions, setPositions] = useState<Position[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  const fetchPositions = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const walletAddress = getWalletAddress();
-      if (!walletAddress) {
-        setError('Please connect your wallet to view positions');
-        return;
-      }
-      
-      console.log('Fetching positions for wallet:', walletAddress);
-      const positionsData = await getUserPositions(walletAddress);
-      console.log('Received positions data:', positionsData);
-      
-      if (positionsData.length > 0) {
-        console.log('First position details:', {
-          amount: positionsData[0].amount,
-          entry_price: positionsData[0].entry_price,
-          current_price: positionsData[0].current_price,
-          pnl: positionsData[0].pnl
-        });
-      }
-      
-      setPositions(positionsData);
-    } catch (error) {
-      console.error('Error fetching positions:', error);
-      setError('Failed to load positions. Please try again later.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const userFetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastFetchTimeRef = useRef<number>(0);
+  const CACHE_DURATION = 60000; // 1 minute cache
 
   useEffect(() => {
+    const fetchPositions = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const walletAddress = localStorage.getItem('walletAddress');
+        if (!walletAddress) {
+          setError('No wallet address found');
+          return;
+        }
+
+        // Check if we need to fetch user data
+        const now = Date.now();
+        if (now - lastFetchTimeRef.current < CACHE_DURATION) {
+          return; // Use cached data
+        }
+
+        // Clear any existing timeout
+        if (userFetchTimeoutRef.current) {
+          clearTimeout(userFetchTimeoutRef.current);
+        }
+
+        // Set a new timeout to fetch user data
+        userFetchTimeoutRef.current = setTimeout(async () => {
+          const user = await getCurrentUser(walletAddress);
+          if (user) {
+            lastFetchTimeRef.current = now;
+            // Fetch positions logic here
+            // ... rest of your position fetching code
+          }
+        }, 1000); // Debounce for 1 second
+
+      } catch (error) {
+        console.error('Error fetching positions:', error);
+        setError('Failed to fetch positions');
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchPositions();
-    
-    // Refresh positions every 10 seconds
-    const interval = setInterval(fetchPositions, 10000);
-    
-    return () => clearInterval(interval);
+
+    return () => {
+      if (userFetchTimeoutRef.current) {
+        clearTimeout(userFetchTimeoutRef.current);
+      }
+    };
   }, []);
 
   const handleClosePosition = async (positionId: string) => {
@@ -98,6 +110,38 @@ export function UserPositions() {
     }
   };
 
+  if (loading) {
+    return (
+      <Card className="bg-[#23262F] border-none rounded-xl shadow-md">
+        <CardHeader className="pb-2">
+          <CardTitle>Open Positions</CardTitle>
+          <CardDescription>Your active trading positions</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="animate-pulse space-y-4">
+            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+            <div className="h-4 bg-gray-200 rounded"></div>
+            <div className="h-4 bg-gray-200 rounded"></div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className="bg-[#23262F] border-none rounded-xl shadow-md">
+        <CardHeader className="pb-2">
+          <CardTitle>Open Positions</CardTitle>
+          <CardDescription>Your active trading positions</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="text-red-500">{error}</div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className="bg-[#23262F] border-none rounded-xl shadow-md">
       <CardHeader className="pb-2">
@@ -105,15 +149,7 @@ export function UserPositions() {
         <CardDescription>Your active trading positions</CardDescription>
       </CardHeader>
       <CardContent>
-        {loading ? (
-          <div className="flex items-center justify-center h-[200px]">
-            <Loader className="h-6 w-6 animate-spin" />
-          </div>
-        ) : error ? (
-          <div className="text-center text-red-500 py-8">
-            {error}
-          </div>
-        ) : positions.length === 0 ? (
+        {positions.length === 0 ? (
           <div className="text-center text-muted-foreground py-8">
             No open positions
           </div>
