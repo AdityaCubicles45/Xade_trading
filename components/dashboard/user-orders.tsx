@@ -28,27 +28,29 @@ export function UserOrders() {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<OrderStatus>('all');
   const [typeFilter, setTypeFilter] = useState<OrderType>('all');
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchOrders = async () => {
       try {
         setLoading(true);
+        setError(null);
         const walletAddress = getWalletAddress();
         if (!walletAddress) {
-          console.error('No wallet address found');
+          setError('Please connect your wallet');
           return;
         }
         const userOrders = await getUserOrders(walletAddress);
         setOrders(userOrders);
       } catch (error) {
         console.error('Error fetching orders:', error);
+        setError('Failed to load orders');
       } finally {
         setLoading(false);
       }
     };
 
     fetchOrders();
-    // Set up polling every 10 seconds
     const interval = setInterval(fetchOrders, 10000);
     return () => clearInterval(interval);
   }, []);
@@ -106,69 +108,24 @@ export function UserOrders() {
         </div>
       </CardHeader>
       <CardContent>
-        {loading ? (
-          <div className="flex items-center justify-center h-[200px]">
-            <Loader className="h-6 w-6 animate-spin" />
+        {error ? (
+          <div className="text-center py-8 text-muted-foreground">
+            {error}
+          </div>
+        ) : loading ? (
+          <div className="flex justify-center py-8">
+            <Loader className="animate-spin" />
           </div>
         ) : filteredOrders.length === 0 ? (
-          <div className="text-center text-muted-foreground py-8">
+          <div className="text-center py-8 text-muted-foreground">
             No orders found
           </div>
         ) : (
           <div className="space-y-4">
+            {/* Render orders table */}
             {filteredOrders.map((order) => (
-              <div 
-                key={order.id}
-                className="p-4 rounded-lg border bg-card"
-              >
-                <div className="flex justify-between items-center mb-2">
-                  <div className="flex items-center gap-2">
-                    <div className="font-medium">{order.market}</div>
-                    {getStatusIcon(order.status)}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div 
-                      className={cn(
-                        "text-sm font-medium px-2 py-1 rounded-full flex items-center gap-1",
-                        order.position_type === 'Buy' 
-                          ? "bg-green-500/10 text-green-500" 
-                          : "bg-red-500/10 text-red-500"
-                      )}
-                    >
-                      {order.position_type === 'Buy' ? (
-                        <ArrowUpRight className="h-3 w-3" />
-                      ) : (
-                        <ArrowDownRight className="h-3 w-3" />
-                      )}
-                      {order.position_type}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {order.order_type}
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="space-y-1 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Amount:</span>
-                    <span className="font-mono">{order.amount.toFixed(4)}</span>
-                  </div>
-                  
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Price:</span>
-                    <span className="font-mono">${order.entry_price.toFixed(2)}</span>
-                  </div>
-                  
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Total:</span>
-                    <span className="font-mono">${(order.amount * order.entry_price).toFixed(2)}</span>
-                  </div>
-                  
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Date:</span>
-                    <span className="font-mono">{format(new Date(order.created_at), 'MMM d, HH:mm')}</span>
-                  </div>
-                </div>
+              <div key={order.id} className="flex items-center justify-between">
+                {/* Order details */}
               </div>
             ))}
           </div>

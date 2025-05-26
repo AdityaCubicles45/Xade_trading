@@ -120,7 +120,7 @@ export default function DashboardPage() {
   return (
     <div className="flex flex-col h-screen">
       <DashboardHeader />
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 overflow-auto">  {/* This enables scrolling */}
         <div className="h-full grid grid-rows-[auto_1fr] gap-4 p-4">
           {/* Market selector */}
           <MarketSelector 
@@ -129,16 +129,26 @@ export default function DashboardPage() {
             tokens={tokens}
           />
           
-          {/* Main content area with scrolling */}
+          {/* Main content area */}
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-            <div className="lg:col-span-3 h-[500px]">  {/* Chart container with fixed height */}
-              <TradingViewChart />
+            <div className="lg:col-span-3 flex flex-col gap-4">
+              <div className="h-[500px]">
+                <TradingViewChart />
+              </div>
+              <div className="grid grid-cols-2 gap-4">  {/* Positions and orders side by side */}
+                <div className="h-[300px]">
+                  <UserPositions />
+                </div>
+                <div className="h-[300px]">
+                  <UserOrders />
+                </div>
+              </div>
             </div>
             <div className="lg:col-span-2 grid grid-cols-2 gap-4">
-              <div className="h-[500px]">  {/* Order book with same height */}
+              <div className="h-[500px]">  {/* Order book */}
                 <OrderBook />
               </div>
-              <div className="h-[500px]">  {/* Trade panel with same height */}
+              <div className="h-[500px]">  {/* Trade panel */}
                 <TradePanel />
               </div>
             </div>
