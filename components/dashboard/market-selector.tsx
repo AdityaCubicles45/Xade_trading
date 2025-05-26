@@ -62,7 +62,23 @@ export function MarketSelector({ tokens, selectedMarket, onMarketChange }: Marke
                   <img
                     src={selectedToken.image}
                     alt={selectedToken.name}
-                    className="w-5 h-5 mr-2 rounded-full"
+                    className="w-6 h-6 mr-2 rounded-full object-cover"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      // Try different image sources in order
+                      const fallbackUrls = [
+                        `https://cryptologos.cc/logos/${selectedToken.symbol.toLowerCase()}-logo.png`,
+                        `https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/${selectedToken.symbol.toLowerCase()}.png`,
+                        `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/binance/assets/${selectedToken.symbol}/logo.png`,
+                        '/placeholder-token.png' // Add a default placeholder image to your public folder
+                      ];
+                      
+                      let currentIndex = fallbackUrls.indexOf(target.src);
+                      if (currentIndex === -1) currentIndex = 0;
+                      
+                      const nextIndex = (currentIndex + 1) % fallbackUrls.length;
+                      target.src = fallbackUrls[nextIndex];
+                    }}
                   />
                 )}
                 <span>{selectedToken.symbol}/USDT</span>
@@ -89,33 +105,56 @@ export function MarketSelector({ tokens, selectedMarket, onMarketChange }: Marke
                     key={token.id}
                     value={`${token.symbol}-${token.name}`}
                     onSelect={() => handleSelect(token)}
-                    className="flex justify-between"
+                    className="flex justify-between items-center py-2"
                   >
-                    <div className="flex items-center">
+                    <div className="flex items-center gap-3">
                       {token.image && (
-                        <img
-                          src={token.image}
-                          alt={token.name}
-                          className="w-5 h-5 mr-2 rounded-full"
-                        />
+                        <div className="relative w-8 h-8">
+                          <img
+                            src={token.image}
+                            alt={token.name}
+                            className="w-8 h-8 rounded-full object-cover"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              // Try different image sources in order
+                              const fallbackUrls = [
+                                `https://cryptologos.cc/logos/${token.symbol.toLowerCase()}-logo.png`,
+                                `https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/${token.symbol.toLowerCase()}.png`,
+                                `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/binance/assets/${token.symbol}/logo.png`,
+                                '/placeholder-token.png' // Add a default placeholder image to your public folder
+                              ];
+                              
+                              let currentIndex = fallbackUrls.indexOf(target.src);
+                              if (currentIndex === -1) currentIndex = 0;
+                              
+                              const nextIndex = (currentIndex + 1) % fallbackUrls.length;
+                              target.src = fallbackUrls[nextIndex];
+                            }}
+                          />
+                        </div>
                       )}
-                      <span>{token.symbol}/USDT</span>
+                      <div className="flex flex-col">
+                        <span className="font-medium">{token.symbol}/USDT</span>
+                        <span className="text-xs text-muted-foreground">{token.name}</span>
+                      </div>
                     </div>
-                    <span 
-                      className={cn(
-                        "text-xs font-mono",
-                        token.price_change_percentage_24h > 0 
-                          ? "text-green-500" 
-                          : token.price_change_percentage_24h < 0 
-                            ? "text-red-500" 
-                            : "text-muted-foreground"
+                    <div className="flex items-center gap-2">
+                      <span 
+                        className={cn(
+                          "text-xs font-mono",
+                          token.price_change_percentage_24h > 0 
+                            ? "text-green-500" 
+                            : token.price_change_percentage_24h < 0 
+                              ? "text-red-500" 
+                              : "text-muted-foreground"
+                        )}
+                      >
+                        {formatPercentage(token.price_change_percentage_24h)}
+                      </span>
+                      {`${token.symbol}USDT` === selectedMarket && (
+                        <Check className="h-4 w-4 text-green-500" />
                       )}
-                    >
-                      {formatPercentage(token.price_change_percentage_24h)}
-                    </span>
-                    {`${token.symbol}USDT` === selectedMarket && (
-                      <Check className="h-4 w-4 ml-2" />
-                    )}
+                    </div>
                   </CommandItem>
                 ))}
               </CommandGroup>

@@ -29,6 +29,60 @@ const MAJOR_TOKENS = [
   'WAVES', 'DASH', 'ZEC', 'XMR', 'QTUM', 'ONT', 'IOST', 'OMG', 'ZRX', 'KNC'
 ];
 
+// Add token ID mapping for images
+const TOKEN_IMAGE_IDS: { [key: string]: string } = {
+  'BTC': 'bitcoin',
+  'ETH': 'ethereum',
+  'BNB': 'binancecoin',
+  'XRP': 'ripple',
+  'ADA': 'cardano',
+  'DOGE': 'dogecoin',
+  'MATIC': 'matic-network',
+  'SOL': 'solana',
+  'DOT': 'polkadot',
+  'LTC': 'litecoin',
+  'AVAX': 'avalanche-2',
+  'LINK': 'chainlink',
+  'UNI': 'uniswap',
+  'ATOM': 'cosmos',
+  'ETC': 'ethereum-classic',
+  'XLM': 'stellar',
+  'BCH': 'bitcoin-cash',
+  'FIL': 'filecoin',
+  'ALGO': 'algorand',
+  'ICP': 'internet-computer',
+  'VET': 'vechain',
+  'MANA': 'decentraland',
+  'SAND': 'the-sandbox',
+  'AXS': 'axie-infinity',
+  'THETA': 'theta-token',
+  'XTZ': 'tezos',
+  'EOS': 'eos',
+  'AAVE': 'aave',
+  'CAKE': 'pancakeswap-token',
+  'MKR': 'maker',
+  'SNX': 'synthetix-network-token',
+  'COMP': 'compound-governance-token',
+  'YFI': 'yearn-finance',
+  'SUSHI': 'sushi',
+  '1INCH': '1inch',
+  'ENJ': 'enjincoin',
+  'BAT': 'basic-attention-token',
+  'ZIL': 'zilliqa',
+  'IOTA': 'iota',
+  'NEO': 'neo',
+  'WAVES': 'waves',
+  'DASH': 'dash',
+  'ZEC': 'zcash',
+  'XMR': 'monero',
+  'QTUM': 'qtum',
+  'ONT': 'ontology',
+  'IOST': 'iostoken',
+  'OMG': 'omisego',
+  'ZRX': '0x',
+  'KNC': 'kyber-network-crystal'
+};
+
 // Binance API Functions
 export const fetchTopTokens = async (limit: number = 300): Promise<Token[]> => {
   try {
@@ -86,11 +140,12 @@ export const fetchTopTokens = async (limit: number = 300): Promise<Token[]> => {
     return sortedPairs.map(({ pair }: { pair: BinancePair }) => {
       const ticker = tickerMap.get(pair.symbol) as BinanceTicker | undefined;
       const baseAsset = pair.baseAsset;
+      const tokenId = TOKEN_IMAGE_IDS[baseAsset] || baseAsset.toLowerCase();
       return {
         id: pair.symbol,
         symbol: baseAsset,
         name: baseAsset,
-        image: `https://cryptologos.cc/logos/${baseAsset.toLowerCase()}-logo.png`,
+        image: `https://assets.coingecko.com/coins/images/1/large/${tokenId}.png`,
         current_price: parseFloat(ticker?.lastPrice || '0'),
         market_cap: parseFloat(ticker?.quoteVolume || '0'),
         market_cap_rank: 0,
