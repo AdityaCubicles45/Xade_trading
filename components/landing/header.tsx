@@ -50,9 +50,6 @@ export function LandingHeader() {
 
         <div className="hidden md:flex items-center space-x-4">
           <ModeToggle />
-          <Link href="/dashboard">
-            <Button variant="outline">Dashboard</Button>
-          </Link>
           <CrossmintLoginButton />
         </div>
 
@@ -99,9 +96,6 @@ export function LandingHeader() {
               About
             </Link>
             <div className="flex flex-col space-y-3 pt-2">
-              <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)}>
-                <Button variant="outline" className="w-full">Dashboard</Button>
-              </Link>
               <CrossmintLoginButton />
             </div>
           </div>

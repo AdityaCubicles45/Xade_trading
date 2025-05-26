@@ -41,12 +41,12 @@ export function LandingHero() {
             transition={{ duration: 0.5, delay: 0.2 }}
           >
             <CrossmintLoginButton variant="default" size="lg" />
-            <Link href="/dashboard">
+            {/* <Link href="/dashboard">
               <Button variant="outline" size="lg">
                 Explore Dashboard
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
-            </Link>
+            </Link> */}
           </motion.div>
         </div>
       </div>
