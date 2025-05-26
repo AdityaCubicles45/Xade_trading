@@ -27,12 +27,25 @@ export function OrderBook({ market }: OrderBookProps) {
         setLoading(true);
         setError(null);
 
+        // Validate market symbol
+        if (!market || !market.match(/^[A-Z0-9]+USDT$/)) {
+          setError('Invalid market symbol');
+          setLoading(false);
+          return;
+        }
+
         // Fetch initial orderbook data
         const response = await fetch(`https://api.binance.com/api/v3/depth?symbol=${market}&limit=20`);
         if (!response.ok) {
-          throw new Error('Failed to fetch orderbook');
+          const errorData = await response.json();
+          throw new Error(errorData.msg || 'Failed to fetch orderbook');
         }
         const data = await response.json();
+        console.log('Initial orderbook data:', data);
+        
+        if (!data.bids || !data.asks) {
+          throw new Error('Invalid orderbook data received');
+        }
         
         setBids(data.bids.map((bid: string[]) => ({
           price: parseFloat(bid[0]),
@@ -50,72 +63,93 @@ export function OrderBook({ market }: OrderBookProps) {
         }
 
         // Use the correct WebSocket URL format for Binance
-        const ws = new WebSocket(`wss://stream.binance.com:9443/ws/${market.toLowerCase()}@depth@100ms`);
+        const wsUrl = `wss://stream.binance.com:9443/ws/${market.toLowerCase()}@depth20@100ms`;
+        console.log('Connecting to WebSocket:', wsUrl);
+        const ws = new WebSocket(wsUrl);
+        
+        let reconnectAttempts = 0;
+        const maxReconnectAttempts = 5;
         
         ws.onopen = () => {
-          console.log('OrderBook WebSocket connected');
+          console.log('OrderBook WebSocket connected successfully');
+          setError(null); // Clear any previous errors
+          reconnectAttempts = 0; // Reset reconnect attempts on successful connection
         };
 
         ws.onmessage = (event) => {
-          const data = JSON.parse(event.data);
-          
-          // Handle snapshot and update events
-          if (data.e === 'depthUpdate') {
-            // Update bids
-            if (data.b) {
-              setBids(prevBids => {
-                const newBids = [...prevBids];
-                data.b.forEach((bid: string[]) => {
-                  const price = parseFloat(bid[0]);
-                  const quantity = parseFloat(bid[1]);
-                  const index = newBids.findIndex(b => b.price === price);
-                  
-                  if (quantity === 0) {
-                    // Remove the price level if quantity is 0
-                    if (index !== -1) {
-                      newBids.splice(index, 1);
-                    }
-                  } else {
-                    // Update or add the price level
-                    if (index !== -1) {
-                      newBids[index] = { price, quantity };
-                    } else {
-                      newBids.push({ price, quantity });
-                    }
-                  }
-                });
-                // Sort bids in descending order
-                return newBids.sort((a, b) => b.price - a.price).slice(0, 20);
+          try {
+            const data = JSON.parse(event.data);
+            console.log('Received WebSocket message:', data);
+            
+            // Handle snapshot and update events
+            if (data.e === 'depthUpdate') {
+              console.log('Processing depth update:', {
+                bids: data.b,
+                asks: data.a
               });
-            }
+              
+              // Update bids
+              if (data.b) {
+                setBids(prevBids => {
+                  const newBids = [...prevBids];
+                  data.b.forEach((bid: string[]) => {
+                    const price = parseFloat(bid[0]);
+                    const quantity = parseFloat(bid[1]);
+                    const index = newBids.findIndex(b => b.price === price);
+                    
+                    if (quantity === 0) {
+                      // Remove the price level if quantity is 0
+                      if (index !== -1) {
+                        newBids.splice(index, 1);
+                      }
+                    } else {
+                      // Update or add the price level
+                      if (index !== -1) {
+                        newBids[index] = { price, quantity };
+                      } else {
+                        newBids.push({ price, quantity });
+                      }
+                    }
+                  });
+                  // Sort bids in descending order
+                  const sortedBids = newBids.sort((a, b) => b.price - a.price).slice(0, 20);
+                  console.log('Updated bids:', sortedBids);
+                  return sortedBids;
+                });
+              }
 
-            // Update asks
-            if (data.a) {
-              setAsks(prevAsks => {
-                const newAsks = [...prevAsks];
-                data.a.forEach((ask: string[]) => {
-                  const price = parseFloat(ask[0]);
-                  const quantity = parseFloat(ask[1]);
-                  const index = newAsks.findIndex(a => a.price === price);
-                  
-                  if (quantity === 0) {
-                    // Remove the price level if quantity is 0
-                    if (index !== -1) {
-                      newAsks.splice(index, 1);
-                    }
-                  } else {
-                    // Update or add the price level
-                    if (index !== -1) {
-                      newAsks[index] = { price, quantity };
+              // Update asks
+              if (data.a) {
+                setAsks(prevAsks => {
+                  const newAsks = [...prevAsks];
+                  data.a.forEach((ask: string[]) => {
+                    const price = parseFloat(ask[0]);
+                    const quantity = parseFloat(ask[1]);
+                    const index = newAsks.findIndex(a => a.price === price);
+                    
+                    if (quantity === 0) {
+                      // Remove the price level if quantity is 0
+                      if (index !== -1) {
+                        newAsks.splice(index, 1);
+                      }
                     } else {
-                      newAsks.push({ price, quantity });
+                      // Update or add the price level
+                      if (index !== -1) {
+                        newAsks[index] = { price, quantity };
+                      } else {
+                        newAsks.push({ price, quantity });
+                      }
                     }
-                  }
+                  });
+                  // Sort asks in ascending order
+                  const sortedAsks = newAsks.sort((a, b) => a.price - b.price).slice(0, 20);
+                  console.log('Updated asks:', sortedAsks);
+                  return sortedAsks;
                 });
-                // Sort asks in ascending order
-                return newAsks.sort((a, b) => a.price - b.price).slice(0, 20);
-              });
+              }
             }
+          } catch (error) {
+            console.error('Error processing WebSocket message:', error);
           }
         };
 
@@ -124,20 +158,33 @@ export function OrderBook({ market }: OrderBookProps) {
           setError('Failed to connect to orderbook stream');
         };
 
-        ws.onclose = () => {
-          console.log('OrderBook WebSocket connection closed');
-          // Attempt to reconnect after a delay
-          setTimeout(() => {
-            if (wsRef.current === ws) {
-              initializeOrderBook();
-            }
-          }, 5000);
+        ws.onclose = (event) => {
+          console.log('OrderBook WebSocket connection closed:', {
+            code: event.code,
+            reason: event.reason,
+            wasClean: event.wasClean
+          });
+          
+          // Attempt to reconnect with exponential backoff
+          if (reconnectAttempts < maxReconnectAttempts) {
+            const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
+            console.log(`Attempting to reconnect in ${delay}ms (attempt ${reconnectAttempts + 1}/${maxReconnectAttempts})`);
+            
+            setTimeout(() => {
+              if (wsRef.current === ws) {
+                reconnectAttempts++;
+                initializeOrderBook();
+              }
+            }, delay);
+          } else {
+            setError('Failed to maintain connection to orderbook stream');
+          }
         };
 
         wsRef.current = ws;
       } catch (error) {
         console.error('Error initializing orderbook:', error);
-        setError('Failed to load orderbook');
+        setError(error instanceof Error ? error.message : 'Failed to load orderbook');
       } finally {
         setLoading(false);
       }

@@ -146,10 +146,10 @@ export default function DashboardPage() {
             </div>
             <div className="lg:col-span-2 grid grid-cols-2 gap-4">
               <div className="h-[500px]">  {/* Order book */}
-                <OrderBook />
+                <OrderBook market={selectedMarket} />
               </div>
               <div className="h-[500px]">  {/* Trade panel */}
-                <TradePanel />
+                <TradePanel market={selectedMarket} currentPrice={currentPrice} />
               </div>
             </div>
           </div>
