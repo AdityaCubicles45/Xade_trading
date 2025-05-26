@@ -18,6 +18,8 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTheme } from 'next-themes';
+import { useEffect, useState } from 'react';
+import { getCurrentUser } from '@/lib/auth';
 
 const navItems = [
   {
@@ -53,6 +55,24 @@ const navItems = [
 ];
 
 export function DashboardHeader() {
+  const [balance, setBalance] = useState<number>(0);
+
+  useEffect(() => {
+    const fetchBalance = async () => {
+      const walletAddress = localStorage.getItem('walletAddress');
+      if (walletAddress) {
+        const user = await getCurrentUser(walletAddress);
+        if (user && user.current_balance !== undefined) {
+          setBalance(user.current_balance);
+        }
+      }
+    };
+    fetchBalance();
+    // Optionally, poll for balance updates every 10 seconds
+    const interval = setInterval(fetchBalance, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <header className="w-full bg-black border-b border-neutral-800 h-16 flex items-center px-8">
       {/* Logo */}
@@ -69,8 +89,8 @@ export function DashboardHeader() {
       </nav>
       {/* Spacer */}
       <div className="flex-1" />
-      {/* Connect Button */}
-      <button className="bg-white text-black font-semibold rounded px-6 py-2 ml-8">Connect</button>
+      {/* Balance Display (replaces Connect button) */}
+      <div className="text-white font-semibold rounded px-6 py-2 ml-8">Balance: ${balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
     </header>
   );
 }
