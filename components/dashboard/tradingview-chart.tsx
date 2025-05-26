@@ -58,7 +58,12 @@ export function TradingViewChart({
 
     return () => {
       if (widget) {
-        widget.remove();
+        try {
+          widget.remove();
+        } catch (e) {
+          // Ignore errors if widget is already removed or not mounted
+          console.warn('TradingView widget already removed or not mounted:', e);
+        }
         setWidget(null);
       }
     };

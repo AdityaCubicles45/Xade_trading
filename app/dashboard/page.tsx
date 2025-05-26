@@ -66,6 +66,19 @@ export default function DashboardPage() {
     initializeDashboard();
   }, []);
 
+  // Periodically refresh tokens every 5 seconds
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const tokensData = await fetchTopTokens();
+        setTokens(tokensData);
+      } catch (error) {
+        console.error('Error refreshing tokens:', error);
+      }
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
   useEffect(() => {
     // Initialize WebSocket for all tokens
     if (tokens.length > 0) {

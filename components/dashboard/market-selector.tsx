@@ -56,7 +56,11 @@ export function MarketSelector({ selectedMarket, onMarketChange, tokens }: Marke
           ))}
         </select>
         <ChevronDown className="w-5 h-5 text-white" />
-        <span className="text-red-500 text-xl font-bold ml-2">$109,066.4</span>
+        {selectedMarket && (
+          <span className="text-red-500 text-xl font-bold ml-2">
+            ${selectedMarket.split('USDT')[0]}
+          </span>
+        )}
       </div>
       {/* Stats Row */}
       <div className="flex items-center gap-8 text-white text-sm mx-auto">
