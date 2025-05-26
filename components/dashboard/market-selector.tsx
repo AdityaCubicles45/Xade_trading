@@ -158,6 +158,17 @@ export function MarketSelector({ tokens, selectedMarket, onMarketChange }: Marke
           </div>
         </div>
       )}
+      
+      <div className="flex items-center justify-between w-full">
+        <div className="flex items-center gap-2">
+          {/* Token selector and market info */}
+        </div>
+        <div className="flex items-center gap-4">
+          <span className="text-sm font-medium">Balance: $1000</span>
+          <Button variant="outline" size="sm">Deposit</Button>
+          <Button variant="outline" size="sm">Withdraw</Button>
+        </div>
+      </div>
     </div>
   );
 }
