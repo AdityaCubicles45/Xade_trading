@@ -369,36 +369,8 @@ export const fetchCurrentPrice = async (symbol: string): Promise<number> => {
 // Add fetchPositions function
 export const fetchPositions = async (walletAddress: string): Promise<Position[]> => {
   try {
-    // For now, return mock positions
-    // In a real application, this would fetch from your backend
-    return [
-      {
-        id: '1',
-        symbol: 'BTCUSDT',
-        side: 'LONG',
-        entryPrice: 50000,
-        currentPrice: 51000,
-        size: 0.1,
-        leverage: 10,
-        pnl: 100,
-        pnlPercentage: 2,
-        liquidationPrice: 45000,
-        createdAt: new Date().toISOString()
-      },
-      {
-        id: '2',
-        symbol: 'ETHUSDT',
-        side: 'SHORT',
-        entryPrice: 3000,
-        currentPrice: 2900,
-        size: 1,
-        leverage: 5,
-        pnl: 100,
-        pnlPercentage: 3.33,
-        liquidationPrice: 3600,
-        createdAt: new Date().toISOString()
-      }
-    ];
+    // TODO: Replace with real backend call
+    return [];
   } catch (error) {
     console.error('Error fetching positions:', error);
     return [];

@@ -68,9 +68,9 @@ export default function PricingPage() {
       <div className="w-full max-w-7xl grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-12">
         {plans.map((plan) => (
           <div key={plan.name} className="flex flex-col items-center">
-            <div
+          <div
               className="bg-white rounded-2xl shadow-md border border-gray-200 flex flex-col items-center p-8 min-h-[540px] w-full text-center"
-            >
+          >
               <h2 className="text-2xl font-extrabold mb-2 text-black">{plan.name}</h2>
               <div className="text-3xl font-extrabold mb-1 text-blue-600">{plan.balance}</div>
               <div className="text-gray-400 mb-2">Account Balance</div>
