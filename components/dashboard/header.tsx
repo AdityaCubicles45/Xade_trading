@@ -9,8 +9,15 @@ import {
   Wallet, 
   History, 
   Settings, 
-  HelpCircle 
+  HelpCircle,
+  Bell, // Add this import
+  User,
+  Moon,
+  Sun,
+  ChevronDown
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useTheme } from 'next-themes';
 
 const navItems = [
   {
@@ -47,11 +54,12 @@ const navItems = [
 
 export function DashboardHeader() {
   const pathname = usePathname();
+  const { theme, setTheme } = useTheme();
   
   return (
     <header className="border-b bg-card">
-      <div className="flex items-center h-16 px-4">
-        {/* Logo */}
+      <div className="flex items-center justify-between h-16 px-4">
+        {/* Left side - Navigation */}
         <nav className="flex items-center space-x-6 mx-6">
           {navItems.map((item) => (
             <Link
@@ -69,7 +77,32 @@ export function DashboardHeader() {
             </Link>
           ))}
         </nav>
-        {/* Rest of header content */}
+        
+        {/* Right side - Icons */}
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon">
+            <Bell className="h-5 w-5" />
+            <span className="sr-only">Notifications</span>
+          </Button>
+          
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+          >
+            {theme === 'dark' ? (
+              <Sun className="h-5 w-5" />
+            ) : (
+              <Moon className="h-5 w-5" />
+            )}
+            <span className="sr-only">Toggle theme</span>
+          </Button>
+          
+          <div className="flex items-center gap-2">
+            <User className="h-5 w-5" />
+            <ChevronDown className="h-4 w-4" />
+          </div>
+        </div>
       </div>
     </header>
   );
