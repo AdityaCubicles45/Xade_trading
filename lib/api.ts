@@ -1,5 +1,6 @@
 import { Token, OrderBook, Market } from './types';
 import { getCurrentUser as getAuthUser } from './auth';
+import { getUserPositions, closePosition as closePositionBackend } from './trading';
 
 interface BinanceTicker {
   symbol: string;
@@ -377,8 +378,22 @@ export const fetchCurrentPrice = async (symbol: string): Promise<number> => {
 // Add fetchPositions function
 export const fetchPositions = async (walletAddress: string): Promise<Position[]> => {
   try {
-    // TODO: Replace with real backend call
-    return [];
+    // Use the real backend call
+    const positions = await getUserPositions(walletAddress);
+    // Map backend Position to frontend Position shape if needed
+    return positions.map((p: any) => ({
+      id: p.id,
+      symbol: p.market || p.symbol,
+      side: p.position_type || 'LONG', // fallback if not present
+      entryPrice: p.entry_price,
+      currentPrice: p.current_price,
+      size: p.amount,
+      leverage: 1,
+      pnl: p.pnl,
+      pnlPercentage: p.entry_price ? ((p.current_price - p.entry_price) / p.entry_price) * 100 : 0,
+      liquidationPrice: 0,
+      createdAt: p.created_at || ''
+    }));
   } catch (error) {
     console.error('Error fetching positions:', error);
     return [];
@@ -386,11 +401,10 @@ export const fetchPositions = async (walletAddress: string): Promise<Position[]>
 };
 
 // Add closePosition function
-export const closePosition = async (positionId: string): Promise<boolean> => {
+export const closePosition = async (positionId: string, closePrice?: number): Promise<boolean> => {
   try {
-    // For now, return mock success
-    // In a real application, this would call your backend
-    return true;
+    // Use the real backend call
+    return await closePositionBackend(positionId, closePrice || 0);
   } catch (error) {
     console.error('Error closing position:', error);
     return false;
