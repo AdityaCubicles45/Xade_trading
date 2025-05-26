@@ -131,12 +131,16 @@ export default function DashboardPage() {
           
           {/* Main content area with scrolling */}
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-            <div className="lg:col-span-3">
+            <div className="lg:col-span-3 h-[500px]">  {/* Chart container with fixed height */}
               <TradingViewChart />
             </div>
             <div className="lg:col-span-2 grid grid-cols-2 gap-4">
-              <OrderBook />
-              <TradePanel />
+              <div className="h-[500px]">  {/* Order book with same height */}
+                <OrderBook />
+              </div>
+              <div className="h-[500px]">  {/* Trade panel with same height */}
+                <TradePanel />
+              </div>
             </div>
           </div>
         </div>

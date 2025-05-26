@@ -24,8 +24,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.variable} ${jetbrainsMono.variable} font-sans`}>
+    <html className="h-full">
+      <body className="h-full overflow-hidden">
         <Providers>
           {children}
         </Providers>
