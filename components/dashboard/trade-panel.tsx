@@ -159,35 +159,35 @@ export function TradePanel({ market, currentPrice = 0 }: TradePanelProps) {
   };
 
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle>Place Order</CardTitle>
-        <CardDescription>Available Balance: ${balance.toLocaleString()}</CardDescription>
+    <Card className="bg-[#1E1F25] border border-[#2D2E36] rounded-lg shadow-sm">
+      <CardHeader className="pb-2 border-b border-[#2D2E36]">
+        <CardTitle className="text-[#F5F5F7] text-lg">Place Order</CardTitle>
+        <CardDescription className="text-[#8F939E]">Available Balance: ${balance.toLocaleString()}</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="pt-4">
         <Tabs defaultValue="market" value={orderType} onValueChange={(value) => setOrderType(value as 'market' | 'limit')}>
-          <TabsList className="w-full mb-4">
-            <TabsTrigger value="market" className="flex-1">Market</TabsTrigger>
-            <TabsTrigger value="limit" className="flex-1">Limit</TabsTrigger>
+          <TabsList className="w-full mb-4 bg-[#2D2E36] p-1 h-10">
+            <TabsTrigger value="market" className="flex-1 data-[state=active]:bg-[#3A3B45] data-[state=active]:text-white">Market</TabsTrigger>
+            <TabsTrigger value="limit" className="flex-1 data-[state=active]:bg-[#3A3B45] data-[state=active]:text-white">Limit</TabsTrigger>
           </TabsList>
           
           <TabsContent value="market">
             <div className="space-y-4">
               <div>
-                <Label htmlFor="amount">Amount</Label>
+                <Label htmlFor="amount" className="text-[#8F939E] text-sm">Amount</Label>
                 <Input
                   id="amount"
                   type="number"
                   value={amount || ''}
                   onChange={(e) => handleAmountChange(e.target.value)}
-                  className="font-mono"
+                  className="font-mono bg-[#2D2E36] border-[#3A3B45] text-white h-10"
                   step="0.0001"
                   min="0"
                 />
               </div>
               
               <div>
-                <div className="flex justify-between text-xs text-muted-foreground mb-2">
+                <div className="flex justify-between text-xs text-[#8F939E] mb-2">
                   <span>0%</span>
                   <span>25%</span>
                   <span>50%</span>
@@ -199,30 +199,22 @@ export function TradePanel({ market, currentPrice = 0 }: TradePanelProps) {
                   max={100}
                   step={1}
                   onValueChange={handleSliderChange}
+                  className="[&>span]:bg-[#4E9EFD] [&>span]:h-1"
                 />
-              </div>
-              
-              <div>
-                <Label className="text-xs text-muted-foreground">Price</Label>
-                <div className="font-mono text-lg">${price.toFixed(2)}</div>
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">Total</Label>
-                <div className="font-mono text-lg">${total.toFixed(2)}</div>
               </div>
               
               <div className="grid grid-cols-2 gap-4">
                 <Button
                   onClick={() => handleOrder('Buy')}
                   disabled={isLoading}
-                  className="bg-green-500 hover:bg-green-600"
+                  className="bg-[#0ECB81] hover:bg-[#0ECB81]/90 text-white h-10 font-medium"
                 >
                   {isLoading ? <Loader className="h-4 w-4 animate-spin" /> : 'Buy'}
                 </Button>
                 <Button
                   onClick={() => handleOrder('Sell')}
                   disabled={isLoading}
-                  variant="destructive"
+                  className="bg-[#F6465D] hover:bg-[#F6465D]/90 text-white h-10 font-medium"
                 >
                   {isLoading ? <Loader className="h-4 w-4 animate-spin" /> : 'Sell'}
                 </Button>

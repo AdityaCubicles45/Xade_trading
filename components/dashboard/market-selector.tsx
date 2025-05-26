@@ -18,16 +18,15 @@ import { Button } from '@/components/ui/button';
 import { Check, ChevronsUpDown, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Token } from '@/lib/types';
-import { formatPercentage, formatPrice } from '@/lib/api';
+import { formatPercentage } from '@/lib/api';
 
 interface MarketSelectorProps {
   tokens: Token[];
   selectedMarket: string;
   onMarketChange: (market: string) => void;
-  currentPrice: number;
 }
 
-export function MarketSelector({ tokens, selectedMarket, onMarketChange, currentPrice }: MarketSelectorProps) {
+export function MarketSelector({ tokens, selectedMarket, onMarketChange }: MarketSelectorProps) {
   const [open, setOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
   const [selectedToken, setSelectedToken] = useState<Token | null>(null);
@@ -48,14 +47,14 @@ export function MarketSelector({ tokens, selectedMarket, onMarketChange, current
   };
 
   return (
-    <div className="flex items-center space-x-4 bg-card rounded-lg border p-3">
+    <div className="flex items-center space-x-4 bg-[#23262F] rounded-xl border border-[#23262F] p-4 shadow-md">
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
-            variant="outline"
+            variant="ghost"
             role="combobox"
             aria-expanded={open}
-            className="w-[220px] justify-between font-mono"
+            className="w-[220px] justify-between font-mono bg-[#181A20] text-white border border-[#23262F] rounded-lg shadow-sm hover:bg-[#23262F]"
           >
             {selectedToken ? (
               <div className="flex items-center">
@@ -74,7 +73,7 @@ export function MarketSelector({ tokens, selectedMarket, onMarketChange, current
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[300px] p-0" align="start">
+        <PopoverContent className="w-[300px] p-0 bg-[#23262F] border-none shadow-lg" align="start">
           <Command>
             <CommandInput 
               placeholder="Search markets..." 
@@ -128,7 +127,7 @@ export function MarketSelector({ tokens, selectedMarket, onMarketChange, current
       {selectedToken && (
         <div className="flex items-center space-x-4">
           <div className="flex flex-col">
-            <span className="font-mono text-2xl">${formatPrice(currentPrice)}</span>
+            <span className="font-mono text-2xl">${selectedToken.current_price.toLocaleString()}</span>
             <span 
               className={cn(
                 "text-xs font-mono",

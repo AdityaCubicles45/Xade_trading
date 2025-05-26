@@ -77,6 +77,15 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-[#181A20] text-white;
+  }
+
+  ::-webkit-scrollbar {
+    width: 8px;
+    background: #23262F;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #181A20;
+    border-radius: 8px;
   }
 }

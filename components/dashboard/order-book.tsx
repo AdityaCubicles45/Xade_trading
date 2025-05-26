@@ -171,7 +171,7 @@ export function OrderBook({ market }: OrderBookProps) {
   );
 
   return (
-    <Card>
+    <Card className="bg-[#23262F] border-none rounded-xl shadow-md">
       <CardHeader className="pb-2">
         <CardTitle>Order Book</CardTitle>
       </CardHeader>

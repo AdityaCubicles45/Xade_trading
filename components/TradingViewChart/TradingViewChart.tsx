@@ -135,5 +135,5 @@ export function TradingViewChart({
     };
   }, [symbol, theme, height, interval, buyPoints, sellPoints]);
 
-  return <div id="tradingview_chart" ref={chartContainerRef}></div>;
+  return <div id="tradingview_chart" ref={chartContainerRef} className="rounded-xl bg-[#23262F] shadow-md overflow-hidden" style={{height}}></div>;
 }

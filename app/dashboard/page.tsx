@@ -118,63 +118,28 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex flex-col h-screen">
       <DashboardHeader />
-      <div className="flex">
-        <DashboardSidebar />
-        <main className="flex-1 p-4">
-          <div className="mb-4">
-            <MarketSelector 
-              tokens={tokens} 
-              selectedMarket={selectedMarket} 
-              onMarketChange={handleMarketChange}
-              currentPrice={currentPrice}
-            />
-          </div>
+      <div className="flex-1 overflow-hidden">
+        <div className="h-full grid grid-rows-[auto_1fr] gap-4 p-4">
+          {/* Market selector */}
+          <MarketSelector 
+            selectedMarket={selectedMarket}
+            onMarketChange={handleMarketChange}
+            tokens={tokens}
+          />
           
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <div className="lg:col-span-2">
-              <TradingViewChart 
-                symbol={selectedMarket}
-                theme="dark"
-                height={500}
-                interval="D"
-                showDrawingTools={true}
-                showIndicators={true}
-                showVolume={true}
-                showTimeScale={true}
-                showToolbar={true}
-                studies={[
-                  'RSI@tv-basicstudies',
-                  'MASimple@tv-basicstudies',
-                  'MACD@tv-basicstudies',
-                  'Volume@tv-basicstudies',
-                  'BB@tv-basicstudies'
-                ]}
-              />
+          {/* Main content area with scrolling */}
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+            <div className="lg:col-span-3">
+              <TradingViewChart />
             </div>
-            <div>
-              <OrderBook market={selectedMarket} />
+            <div className="lg:col-span-2 grid grid-cols-2 gap-4">
+              <OrderBook />
+              <TradePanel />
             </div>
           </div>
-          
-
-          
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <div>
-              <TradePanel 
-                market={selectedMarket} 
-                currentPrice={currentPrice}
-              />
-            </div>
-            <div>
-              <UserPositions />
-            </div>
-            <div>
-              <UserOrders />
-            </div>
-          </div>
-        </main>
+        </div>
       </div>
     </div>
   );

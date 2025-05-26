@@ -1,100 +1,75 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { ModeToggle } from '@/components/theme-toggle';
-import { User, Bell, Settings, LogOut } from 'lucide-react';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { User as UserType } from '@/lib/types';
-import { getCurrentUser } from '@/lib/auth';
+import { cn } from '@/lib/utils';
+import { 
+  LayoutDashboard, 
+  LineChart, 
+  Wallet, 
+  History, 
+  Settings, 
+  HelpCircle 
+} from 'lucide-react';
+
+const navItems = [
+  {
+    name: 'Dashboard',
+    href: '/dashboard',
+    icon: <LayoutDashboard className="h-5 w-5" />,
+  },
+  {
+    name: 'Trading',
+    href: '/dashboard/trading',
+    icon: <LineChart className="h-5 w-5" />,
+  },
+  {
+    name: 'Wallet',
+    href: '/dashboard/wallet',
+    icon: <Wallet className="h-5 w-5" />,
+  },
+  {
+    name: 'History',
+    href: '/dashboard/history',
+    icon: <History className="h-5 w-5" />,
+  },
+  {
+    name: 'Settings',
+    href: '/dashboard/settings',
+    icon: <Settings className="h-5 w-5" />,
+  },
+  {
+    name: 'Help',
+    href: '/dashboard/help',
+    icon: <HelpCircle className="h-5 w-5" />,
+  },
+];
 
 export function DashboardHeader() {
-  const router = useRouter();
-  const [userData, setUserData] = useState<UserType | null>(null);
-  const [walletAddress, setWalletAddress] = useState<string>('');
-
-  useEffect(() => {
-    const getUser = async () => {
-      const walletAddr = localStorage.getItem('walletAddress') || '';
-      setWalletAddress(walletAddr);
-      
-      if (walletAddr) {
-        const user = await getCurrentUser(walletAddr);
-        setUserData(user);
-      }
-    };
-    
-    getUser();
-  }, []);
-
-  const handleLogout = () => {
-    localStorage.removeItem('walletAddress');
-    localStorage.removeItem('isAuthenticated');
-    router.push('/');
-  };
-
+  const pathname = usePathname();
+  
   return (
-    <header className="bg-card border-b sticky top-0 z-50">
-      <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-        <Link href="/dashboard" className="flex items-center space-x-2">
-          <span className="font-bold text-xl">AlphaTrade</span>
-        </Link>
-
-        <div className="flex items-center space-x-4">
-          <div className="hidden md:flex items-center space-x-2 bg-muted/50 rounded-full px-3 py-1">
-            <span className="text-sm text-muted-foreground">Balance:</span>
-            <span className="text-sm font-mono">
-              ${userData?.current_balance.toLocaleString() || '0.00'}
-            </span>
-          </div>
-          
-          <Button variant="outline" size="icon">
-            <Bell className="h-4 w-4" />
-          </Button>
-          
-          <ModeToggle />
-          
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon">
-                <User className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>
-                <div className="flex flex-col">
-                  <span>{userData?.username || 'Trader'}</span>
-                  <span className="text-xs text-muted-foreground truncate max-w-[150px]">
-                    {walletAddress}
-                  </span>
-                </div>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>
-                <User className="mr-2 h-4 w-4" />
-                <span>Profile</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Settings className="mr-2 h-4 w-4" />
-                <span>Settings</span>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout}>
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Logout</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+    <header className="border-b bg-card">
+      <div className="flex items-center h-16 px-4">
+        {/* Logo */}
+        <nav className="flex items-center space-x-6 mx-6">
+          {navItems.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                "text-sm font-medium transition-colors flex items-center gap-2",
+                pathname === item.href
+                  ? "text-primary"
+                  : "text-muted-foreground hover:text-primary"
+              )}
+            >
+              {item.icon}
+              {item.name}
+            </Link>
+          ))}
+        </nav>
+        {/* Rest of header content */}
       </div>
     </header>
   );
