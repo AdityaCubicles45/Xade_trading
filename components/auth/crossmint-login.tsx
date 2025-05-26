@@ -35,7 +35,7 @@ export function CrossmintLoginButton({
       localStorage.setItem('isAuthenticated', 'true');
       
       // Redirect to dashboard
-      router.push('/dashboard');
+      router.push('/pricing');
     } catch (error) {
       console.error('Login error:', error);
     } finally {
