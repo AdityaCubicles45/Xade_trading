@@ -1,19 +1,11 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle 
-} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { formatPrice } from '@/lib/api';
 import { Loader } from 'lucide-react';
-import { getWalletAddress } from '@/lib/auth';
 import { getCurrentUser, fetchPositions, closePosition } from '@/lib/api';
 import { usePositionsReload } from './PositionsReloadContext';
 
@@ -24,6 +16,7 @@ interface Position {
   entry_price: number;
   current_price: number;
   pnl: number;
+  pnl_percentage: number;
 }
 
 interface UserPositionsProps {
@@ -74,7 +67,8 @@ export function UserPositions({ reloadOrders }: UserPositionsProps) {
             amount: p.size,
             entry_price: p.entryPrice,
             current_price: p.currentPrice,
-            pnl: p.pnl
+            pnl: p.pnl,
+            pnl_percentage: ((p.currentPrice - p.entryPrice) / p.entryPrice) * 100
           })));
         }
       }, 1000); // Debounce for 1 second
@@ -94,9 +88,15 @@ export function UserPositions({ reloadOrders }: UserPositionsProps) {
     const handlePriceUpdate = (event: CustomEvent) => {
       const { symbol, price } = event.detail;
       setPositions(prevPositions =>
-        prevPositions.map(pos =>
-          pos.market === symbol ? { ...pos, current_price: price } : pos
-        )
+        prevPositions.map(pos => {
+          if (pos.market === symbol) {
+            const newPrice = price;
+            const pnl = (newPrice - pos.entry_price) * pos.amount;
+            const pnl_percentage = ((newPrice - pos.entry_price) / pos.entry_price) * 100;
+            return { ...pos, current_price: newPrice, pnl, pnl_percentage };
+          }
+          return pos;
+        })
       );
     };
     window.addEventListener('priceUpdate', handlePriceUpdate as EventListener);
@@ -115,12 +115,12 @@ export function UserPositions({ reloadOrders }: UserPositionsProps) {
       const position = positions.find(p => p.id === positionId);
       if (!position) return;
       
-      const result = await closePosition(positionId);
+      const result = await closePosition(positionId, position.current_price);
       
       if (result) {
         toast({
           title: "Position closed",
-          description: `Position closed with ${position.pnl > 0 ? 'profit' : 'loss'} of $${Math.abs(position.pnl).toFixed(2)}`,
+          description: `Position closed with ${position.pnl > 0 ? 'profit' : 'loss'} of $${Math.abs(position.pnl).toFixed(2)} (${position.pnl_percentage.toFixed(2)}%)`,
         });
         
         // Refresh positions
@@ -146,42 +146,41 @@ export function UserPositions({ reloadOrders }: UserPositionsProps) {
 
   if (loading) {
     return (
-      <Card className="bg-[#23262F] border-none rounded-xl shadow-md">
-        <CardHeader className="pb-2">
-          <CardTitle>Open Positions</CardTitle>
-          <CardDescription>Your active trading positions</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="animate-pulse space-y-4">
-            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-            <div className="h-4 bg-gray-200 rounded"></div>
-            <div className="h-4 bg-gray-200 rounded"></div>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="w-full bg-black px-4 py-2">
+        <div className="flex justify-between items-center mb-2">
+          <span className="text-white text-base font-semibold">Positions</span>
+        </div>
+        <div className="animate-pulse space-y-4">
+          <div className="h-4 bg-neutral-800 rounded w-3/4"></div>
+          <div className="h-4 bg-neutral-800 rounded"></div>
+          <div className="h-4 bg-neutral-800 rounded"></div>
+        </div>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <Card className="bg-[#23262F] border-none rounded-xl shadow-md">
-        <CardHeader className="pb-2">
-          <CardTitle>Open Positions</CardTitle>
-          <CardDescription>Your active trading positions</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="text-red-500">{error}</div>
-        </CardContent>
-      </Card>
+      <div className="w-full bg-black px-4 py-2">
+        <div className="flex justify-between items-center mb-2">
+          <span className="text-white text-base font-semibold">Positions</span>
+        </div>
+        <div className="text-red-500">{error}</div>
+      </div>
     );
   }
 
   if (positions.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-full w-full bg-black py-8">
-        <div className="flex flex-col items-center">
-          <svg width="48" height="48" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="48" height="48" rx="12" fill="#23262F"/><path d="M24 16v16M16 24h16" stroke="#8F939E" strokeWidth="2" strokeLinecap="round"/></svg>
-          <span className="mt-4 text-neutral-500 text-base">You don't have any open position</span>
+      <div className="w-full bg-black px-4 py-2">
+        <div className="flex justify-between items-center mb-2">
+          <span className="text-white text-base font-semibold">Positions</span>
+        </div>
+        <div className="flex flex-col items-center justify-center h-full w-full py-8">
+          <div className="flex flex-col items-center">
+            <svg width="48" height="48" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="48" height="48" rx="12" fill="#23262F"/><path d="M24 16v16M16 24h16" stroke="#8F939E" strokeWidth="2" strokeLinecap="round"/></svg>
+            <span className="mt-4 text-neutral-500 text-base">You don't have any open position</span>
+          </div>
         </div>
       </div>
     );
@@ -212,11 +211,19 @@ export function UserPositions({ reloadOrders }: UserPositionsProps) {
                 <td className="px-2 py-1">${formatPrice(position.entry_price)}</td>
                 <td className="px-2 py-1">${formatPrice(position.current_price)}</td>
                 <td className="px-2 py-1">
-                  <span className={cn(
-                    position.pnl > 0 ? "text-green-500" : position.pnl < 0 ? "text-red-500" : "text-white"
-                  )}>
-                    ${formatPrice(position.pnl)}
-                  </span>
+                  <div className="flex flex-col">
+                    <span className={cn(
+                      position.pnl > 0 ? "text-green-500" : position.pnl < 0 ? "text-red-500" : "text-white"
+                    )}>
+                      ${formatPrice(position.pnl)}
+                    </span>
+                    <span className={cn(
+                      "text-xs",
+                      position.pnl_percentage > 0 ? "text-green-500" : position.pnl_percentage < 0 ? "text-red-500" : "text-white"
+                    )}>
+                      {position.pnl_percentage.toFixed(2)}%
+                    </span>
+                  </div>
                 </td>
                 <td className="px-2 py-1">
                   <Button 

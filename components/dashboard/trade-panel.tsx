@@ -207,15 +207,15 @@ export function TradePanel({ market, currentPrice = 0 }: TradePanelProps) {
           <div className="flex flex-col gap-1 text-white text-sm mb-2">
             <div className="flex justify-between items-center">
               <span className="text-neutral-400">Buying Power</span>
-              <span className="text-white font-semibold">$0</span>
+              <span className="text-white font-semibold">${balance.toFixed(2)}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-neutral-400">Available Margin</span>
-              <span className="text-white font-semibold">$0</span>
+              <span className="text-white font-semibold">${balance.toFixed(2)}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-neutral-400">Leverage</span>
-              <span className="text-white font-semibold">x --</span>
+              <span className="text-white font-semibold">x1</span>
             </div>
           </div>
           <div className="flex gap-2 mb-2">
@@ -227,44 +227,71 @@ export function TradePanel({ market, currentPrice = 0 }: TradePanelProps) {
       {/* Order Form */}
       <div className="bg-black px-6 pb-4 flex flex-col gap-2">
         <div className="flex gap-2 mb-2">
-          <button className={`flex-1 py-2 rounded text-white font-semibold ${orderType === 'market' ? 'bg-green-500' : 'bg-neutral-900 border border-neutral-800'}`} onClick={() => setOrderType('market')}>MARKET</button>
-          <button className={`flex-1 py-2 rounded text-white font-semibold ${orderType === 'limit' ? 'bg-green-500' : 'bg-neutral-900 border border-neutral-800'}`} onClick={() => setOrderType('limit')}>LIMIT</button>
+          <button 
+            className={`flex-1 py-2 rounded text-white font-semibold ${orderType === 'market' ? 'bg-green-500' : 'bg-neutral-900 border border-neutral-800'}`} 
+            onClick={() => setOrderType('market')}
+          >
+            MARKET
+          </button>
+          <button 
+            className={`flex-1 py-2 rounded text-white font-semibold ${orderType === 'limit' ? 'bg-green-500' : 'bg-neutral-900 border border-neutral-800'}`} 
+            onClick={() => setOrderType('limit')}
+          >
+            LIMIT
+          </button>
         </div>
         <div className="flex gap-2 mb-2">
-          <button className="flex-1 bg-green-500 text-white font-semibold rounded py-2">BUY/LONG</button>
-          <button className="flex-1 bg-neutral-900 text-white font-semibold rounded py-2 border border-neutral-800">SELL/SHORT</button>
+          <button 
+            className="flex-1 bg-green-500 text-white font-semibold rounded py-2"
+            onClick={() => handleOrder('Buy')}
+            disabled={isLoading}
+          >
+            {isLoading ? 'PLACING ORDER...' : 'BUY/LONG'}
+          </button>
+          <button 
+            className="flex-1 bg-red-500 text-white font-semibold rounded py-2"
+            onClick={() => handleOrder('Sell')}
+            disabled={isLoading}
+          >
+            {isLoading ? 'PLACING ORDER...' : 'SELL/SHORT'}
+          </button>
         </div>
         <div className="flex flex-col gap-2 mb-2">
           <div className="flex justify-between items-center">
             <span className="text-neutral-400 text-xs">Order value</span>
-            <input type="number" value={amount || ''} onChange={e => handleAmountChange(e.target.value)} className="bg-neutral-900 text-white text-xs rounded px-2 py-1 w-24 border border-neutral-800 focus:outline-none" placeholder="0" />
+            <input 
+              type="number" 
+              value={amount || ''} 
+              onChange={e => handleAmountChange(e.target.value)} 
+              className="bg-neutral-900 text-white text-xs rounded px-2 py-1 w-24 border border-neutral-800 focus:outline-none" 
+              placeholder="0" 
+            />
             <span className="text-neutral-400 text-xs">USDC</span>
-            <span className="text-neutral-400 text-xs">BTC</span>
+            <span className="text-neutral-400 text-xs">{market}</span>
           </div>
           <div className="flex justify-between items-center text-xs text-neutral-400">
             <span>Order Size:</span>
-            <span className="text-white">0 BTC</span>
+            <span className="text-white">{amount.toFixed(4)} {market}</span>
           </div>
         </div>
         <div className="flex flex-col gap-1 text-xs text-neutral-400 mb-2">
           <div className="flex justify-between items-center">
             <span>Market</span>
-            <span className="text-white">BTC</span>
+            <span className="text-white">{market}</span>
           </div>
           <div className="flex justify-between items-center">
             <span>Estimated entry price:</span>
-            <span className="text-white">$109076.6</span>
+            <span className="text-white">${price.toFixed(2)}</span>
           </div>
           <div className="flex justify-between items-center">
-            <span>Liquidation Price</span>
-            <span className="text-white">$0.00</span>
+            <span>Total Value:</span>
+            <span className="text-white">${total.toFixed(2)}</span>
           </div>
           <div className="flex justify-between items-center">
             <span>Fees:</span>
-            <span className="text-white">0 USDC</span>
+            <span className="text-white">${(total * 0.001).toFixed(2)} USDC</span>
           </div>
         </div>
-        <button className="w-full bg-green-500 text-white font-semibold rounded py-3 text-lg mt-2">BUY BTC</button>
       </div>
     </div>
   );

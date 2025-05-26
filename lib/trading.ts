@@ -43,7 +43,7 @@ export const createOrder = async (
       amount,
       entry_price: entryPrice,
       order_type: orderType,
-      status: 'pending'
+      status: 'filled' // For now, we'll mark all orders as filled immediately
     };
     
     // Insert the order
@@ -146,29 +146,6 @@ export const getUserOrders = async (walletAddress: string): Promise<Order[]> => 
   }
 };
 
-// Update order status
-export const updateOrderStatus = async (
-  orderId: string,
-  status: 'filled' | 'cancelled'
-): Promise<boolean> => {
-  try {
-    const { error } = await supabase
-      .from('orders')
-      .update({ status })
-      .eq('id', orderId);
-    
-    if (error) {
-      console.error('Error updating order status:', error);
-      return false;
-    }
-    
-    return true;
-  } catch (error) {
-    console.error('Error in updateOrderStatus:', error);
-    return false;
-  }
-};
-
 // Create a new position
 export const createPosition = async (
   userId: string,
@@ -215,46 +192,6 @@ export const createPosition = async (
   } catch (error) {
     console.error('Error in createPosition:', error);
     return null;
-  }
-};
-
-// Update position with current price and PnL
-export const updatePosition = async (
-  positionId: string,
-  currentPrice: number
-): Promise<boolean> => {
-  try {
-    const { data, error: fetchError } = await supabase
-      .from('active_positions')
-      .select('*')
-      .eq('id', positionId)
-      .single();
-    
-    if (fetchError) {
-      console.error('Error fetching position for update:', fetchError);
-      return false;
-    }
-    
-    const position = data as Position;
-    const pnl = (currentPrice - position.entry_price) * position.amount;
-    
-    const { error: updateError } = await supabase
-      .from('active_positions')
-      .update({
-        current_price: currentPrice,
-        pnl
-      })
-      .eq('id', positionId);
-    
-    if (updateError) {
-      console.error('Error updating position:', updateError);
-      return false;
-    }
-    
-    return true;
-  } catch (error) {
-    console.error('Error in updatePosition:', error);
-    return false;
   }
 };
 
