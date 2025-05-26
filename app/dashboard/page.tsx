@@ -13,9 +13,10 @@ import { UserOrders } from '@/components/dashboard/user-orders';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Token } from '@/lib/types';
 import { fetchTopTokens, initializeWebSocket, closeWebSocket } from '@/lib/api';
-import { isAuthenticated, getWalletAddress } from '@/lib/auth';
+import { isAuthenticated, getWalletAddress, updateUserBalance } from '@/lib/auth';
 import TokenSelect from '@/components/ui/token-select';
 import { TradeButtons } from '@/components/dashboard/trade-buttons';
+import { PositionsReloadProvider } from '@/components/dashboard/PositionsReloadContext';
 
 export default function DashboardPage() {
   const [isClient, setIsClient] = useState(false);
@@ -25,19 +26,32 @@ export default function DashboardPage() {
   const [selectedToken, setSelectedToken] = useState<Token | undefined>();
   const [currentPrice, setCurrentPrice] = useState<number>(0);
   const priceUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [ordersReloadSignal, setOrdersReloadSignal] = useState(0);
+  const reloadOrders = () => setOrdersReloadSignal((prev) => prev + 1);
 
   useEffect(() => {
-    setIsClient(true);
+    const initializeDashboard = async () => {
+      setIsClient(true);
 
-    // Check authentication
-    if (!isAuthenticated()) {
-      console.log('User not authenticated, redirecting to home...');
-      redirect('/');
-      return;
-    }
+      // Check authentication
+      if (!isAuthenticated()) {
+        console.log('User not authenticated, redirecting to home...');
+        redirect('/');
+        return;
+      }
 
-    // Fetch top tokens
-    const getTokens = async () => {
+      // Handle selected balance from pricing page
+      const selectedBalance = localStorage.getItem('selectedBalance');
+      const walletAddress = localStorage.getItem('walletAddress');
+      if (selectedBalance && walletAddress) {
+        // Update the user's balance in the database
+        await updateUserBalance(walletAddress, Number(selectedBalance), 0);
+        // Trigger a storage event to update other components
+        window.dispatchEvent(new Event('storage'));
+        localStorage.removeItem('selectedBalance');
+      }
+
+      // Fetch top tokens
       try {
         setIsLoading(true);
         const tokensData = await fetchTopTokens();
@@ -49,7 +63,7 @@ export default function DashboardPage() {
       }
     };
 
-    getTokens();
+    initializeDashboard();
   }, []);
 
   useEffect(() => {
@@ -130,43 +144,65 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="flex flex-col h-screen">
-      <DashboardHeader />
-      <div className="flex-1 overflow-auto">  {/* This enables scrolling */}
-        <div className="h-full grid grid-rows-[auto_1fr] gap-4 p-4">
-          {/* Market selector */}
-          <MarketSelector 
-            selectedMarket={selectedMarket}
-            onMarketChange={handleMarketChange}
-            tokens={tokens}
-          />
-          
-          {/* Main content area */}
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-            <div className="lg:col-span-3 flex flex-col gap-4">
-              <div className="h-[500px]">
-                <TradingViewChart symbol={selectedMarket} />
-              </div>
-              <div className="grid grid-cols-2 gap-4">  {/* Positions and orders side by side */}
-                <div className="h-[300px]">
-                  <UserPositions />
-                </div>
-                <div className="h-[300px]">
-                  <UserOrders />
-                </div>
-              </div>
+    <PositionsReloadProvider>
+      <div className="flex flex-col min-h-screen bg-black">
+        <DashboardHeader />
+        {/* Market Selector at the very top, spanning full width */}
+        <MarketSelector 
+          selectedMarket={selectedMarket}
+          onMarketChange={handleMarketChange}
+          tokens={tokens}
+        />
+        {/* Main content row: Chart | Order Book | Trade Panel */}
+        <div className="flex flex-row w-full bg-black border-b border-neutral-800" style={{height: '420px', minHeight: '420px', maxHeight: '420px'}}>
+          {/* Chart */}
+          <div className="flex-1 min-w-0 h-full m-0 p-0 overflow-hidden flex flex-col">
+            <div className="h-full w-full">
+              <TradingViewChart symbol={selectedMarket} />
             </div>
-            <div className="lg:col-span-2 grid grid-cols-2 gap-4">
-              <div className="h-[500px]">  {/* Order book */}
-                <OrderBook market={selectedMarket} />
-              </div>
-              <div className="h-[500px]">  {/* Trade panel */}
-                <TradePanel market={selectedMarket} currentPrice={currentPrice} />
-              </div>
-            </div>
+          </div>
+          {/* Order Book */}
+          <div className="w-[340px] h-full border-l border-neutral-800 m-0 p-0 overflow-hidden flex flex-col">
+            <OrderBook market={selectedMarket} />
+          </div>
+          {/* Trade Panel */}
+          <div className="w-[340px] h-full border-l border-neutral-800 m-0 p-0 overflow-hidden flex flex-col">
+            <TradePanel market={selectedMarket} currentPrice={currentPrice} />
+          </div>
+        </div>
+        {/* Portfolio Bar below main content row */}
+        <div className="flex flex-row items-center justify-between w-full px-8 py-0 bg-black border-b border-neutral-800 h-16">
+          <div className="flex flex-col items-start justify-center">
+            <span className="text-xs text-neutral-400">Portfolio Value</span>
+            <span className="text-white text-lg font-semibold">$0.000</span>
+          </div>
+          <div className="flex flex-col items-start justify-center">
+            <span className="text-xs text-neutral-400">PnL</span>
+            <span className="text-green-400 text-lg font-semibold">0(0.00000%)</span>
+          </div>
+          <div className="flex flex-col items-start justify-center">
+            <span className="text-xs text-neutral-400">Leverage</span>
+            <span className="text-white text-lg font-semibold">0.00x</span>
+          </div>
+          <div className="flex flex-col items-start justify-center">
+            <span className="text-xs text-neutral-400">Xade Shards</span>
+            <span className="text-orange-400 text-lg font-semibold">0</span>
+          </div>
+          <div className="flex flex-col items-start justify-center">
+            <span className="text-xs text-neutral-400">$ORDER</span>
+            <span className="text-blue-400 text-lg font-semibold">0</span>
+          </div>
+        </div>
+        {/* Positions and Orders row below portfolio bar */}
+        <div className="flex flex-row w-full bg-black min-h-0 border-t border-neutral-800" style={{height: '180px'}}>
+          <div className="flex-1 flex flex-col border-r border-neutral-800 min-h-0">
+            <UserPositions reloadOrders={reloadOrders} />
+          </div>
+          <div className="flex-1 flex flex-col min-h-0">
+            <UserOrders ordersReloadSignal={ordersReloadSignal} />
           </div>
         </div>
       </div>
-    </div>
+    </PositionsReloadProvider>
   );
 }

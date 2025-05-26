@@ -1,4 +1,5 @@
 import { Token, OrderBook, Market } from './types';
+import { getCurrentUser as getAuthUser } from './auth';
 
 interface BinanceTicker {
   symbol: string;
@@ -110,14 +111,15 @@ interface Position {
 // Add getCurrentUser function
 export const getCurrentUser = async (walletAddress: string): Promise<User | null> => {
   try {
-    // For now, return a mock user
-    // In a real application, this would fetch from your backend
+    const user = await getAuthUser(walletAddress);
+    if (!user) return null;
+    
     return {
-      id: '1',
-      walletAddress,
-      balance: 1000, // Default balance
-      tier: 'basic', // Default tier
-      createdAt: new Date().toISOString()
+      id: user.id,
+      walletAddress: user.wallet_address,
+      balance: user.current_balance,
+      tier: user.tier,
+      createdAt: user.created_at || new Date().toISOString()
     };
   } catch (error) {
     console.error('Error fetching current user:', error);

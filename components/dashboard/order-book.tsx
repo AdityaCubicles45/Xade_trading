@@ -218,75 +218,36 @@ export function OrderBook({ market }: OrderBookProps) {
   );
 
   return (
-    <Card className="bg-[#23262F] border-none rounded-xl shadow-md">
-      <CardHeader className="pb-2">
-        <CardTitle>Order Book</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {loading ? (
-          <div className="h-[400px] flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+    <div className="h-full w-full bg-black px-0 py-0 flex flex-col justify-start">
+      <div className="flex justify-end items-center px-4 py-2 border-b border-neutral-800">
+        <span className="text-white text-base font-semibold">Order Book</span>
+      </div>
+      <div className="flex-1 flex flex-col h-full overflow-y-auto px-4">
+        {/* Asks (Sell Orders) */}
+        {asksWithTotal.slice(0, 10).map((ask, index) => (
+          <div key={index} className="flex items-center text-xs py-0.5">
+            <span className="w-16 text-right text-neutral-400">{ask.quantity}</span>
+            <span className="w-20 text-center text-red-500">{formatPrice(ask.price)}</span>
+            <span className="w-12 text-right text-neutral-400">-</span>
           </div>
-        ) : error ? (
-          <div className="h-[400px] flex items-center justify-center text-red-500">
-            {error}
-          </div>
-        ) : (
-          <div className="flex flex-col">
-            {/* Asks (Sell Orders) */}
-            <div className="mb-2">
-              <div className="text-sm font-medium text-red-500 mb-2">Asks</div>
-              <div className="space-y-1">
-                {asksWithTotal.slice(0, 10).map((ask, index) => (
-                  <div key={index} className="relative">
-                    <div 
-                      className="absolute inset-0 bg-red-500/10"
-                      style={{ 
-                        width: `${(ask.total / maxTotal) * 100}%`,
-                        right: 0
-                      }}
-                    />
-                    <div className="relative flex justify-between text-sm">
-                      <span className="text-red-500">{formatPrice(ask.price)}</span>
-                      <span>{formatVolume(ask.quantity)}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Mid Price */}
-            {midPrice && (
-              <div className="py-3 px-4 bg-muted/50 border-y flex justify-between items-center my-2">
-                <span className="text-sm font-medium">Mid Price</span>
-                <span className="font-mono font-medium text-lg">${formatPrice(midPrice)}</span>
-              </div>
-            )}
-
-            {/* Bids (Buy Orders) */}
-            <div className="mt-2">
-              <div className="text-sm font-medium text-green-500 mb-2">Bids</div>
-              <div className="space-y-1">
-                {bidsWithTotal.slice(0, 10).map((bid, index) => (
-                  <div key={index} className="relative">
-                    <div 
-                      className="absolute inset-0 bg-green-500/10"
-                      style={{ 
-                        width: `${(bid.total / maxTotal) * 100}%`,
-                        left: 0
-                      }}
-                    />
-                    <div className="relative flex justify-between text-sm">
-                      <span className="text-green-500">{formatPrice(bid.price)}</span>
-                      <span>{formatVolume(bid.quantity)}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+        ))}
+        {/* Mid Price */}
+        {midPrice && (
+          <div className="flex items-center py-1 bg-neutral-900 rounded my-1">
+            <span className="w-16 text-xs text-neutral-400"></span>
+            <span className="w-20 text-center text-green-400 font-semibold">{formatPrice(midPrice)}</span>
+            <span className="w-12 text-xs text-neutral-400"></span>
           </div>
         )}
-      </CardContent>
-    </Card>
+        {/* Bids (Buy Orders) */}
+        {bidsWithTotal.slice(0, 10).map((bid, index) => (
+          <div key={index} className="flex items-center text-xs py-0.5">
+            <span className="w-16 text-right text-neutral-400">{bid.quantity}</span>
+            <span className="w-20 text-center text-green-400">{formatPrice(bid.price)}</span>
+            <span className="w-12 text-right text-neutral-400">-</span>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }

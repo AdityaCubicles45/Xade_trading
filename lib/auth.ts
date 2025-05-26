@@ -150,7 +150,7 @@ export const getWalletAddress = (): string | null => {
 };
 
 // Update user's balance and PnL
-export const updateUserBalance = async (userId: string, balance: number, pnl: number): Promise<boolean> => {
+export const updateUserBalance = async (walletAddress: string, balance: number, pnl: number): Promise<boolean> => {
   try {
     const { error } = await supabase
       .from('users')
@@ -158,7 +158,7 @@ export const updateUserBalance = async (userId: string, balance: number, pnl: nu
         current_balance: balance,
         current_pnl: pnl
       })
-      .eq('id', userId);
+      .eq('wallet_address', walletAddress);
     
     if (error) {
       console.error('Error updating user balance:', error);

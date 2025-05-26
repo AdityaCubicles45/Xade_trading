@@ -53,57 +53,24 @@ const navItems = [
 ];
 
 export function DashboardHeader() {
-  const pathname = usePathname();
-  const { theme, setTheme } = useTheme();
-  
   return (
-    <header className="border-b bg-card">
-      <div className="flex items-center justify-between h-16 px-4">
-        {/* Left side - Navigation */}
-        <nav className="flex items-center space-x-6 mx-6">
-          {navItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "text-sm font-medium transition-colors flex items-center gap-2",
-                pathname === item.href
-                  ? "text-primary"
-                  : "text-muted-foreground hover:text-primary"
-              )}
-            >
-              {item.icon}
-              {item.name}
-            </Link>
-          ))}
-        </nav>
-        
-        {/* Right side - Icons */}
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon">
-            <Bell className="h-5 w-5" />
-            <span className="sr-only">Notifications</span>
-          </Button>
-          
-          <Button 
-            variant="ghost" 
-            size="icon"
-            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-          >
-            {theme === 'dark' ? (
-              <Sun className="h-5 w-5" />
-            ) : (
-              <Moon className="h-5 w-5" />
-            )}
-            <span className="sr-only">Toggle theme</span>
-          </Button>
-          
-          <div className="flex items-center gap-2">
-            <User className="h-5 w-5" />
-            <ChevronDown className="h-4 w-4" />
-          </div>
-        </div>
-      </div>
+    <header className="w-full bg-black border-b border-neutral-800 h-16 flex items-center px-8">
+      {/* Logo */}
+      <div className="text-white text-2xl font-bold tracking-widest mr-12">AlphaTrade</div>
+      {/* Navigation */}
+      <nav className="flex items-center space-x-8 text-white text-base font-medium">
+        <a href="#" className="hover:text-green-400">Trade</a>
+        <a href="#" className="hover:text-green-400">Docs</a>
+        <a href="#" className="hover:text-green-400">Leaderboard</a>
+        <a href="#" className="hover:text-green-400">Campaigns</a>
+        <a href="#" className="hover:text-green-400">Community</a>
+        <a href="#" className="hover:text-green-400">Mobile App</a>
+        <a href="#" className="hover:text-green-400">Add Funds</a>
+      </nav>
+      {/* Spacer */}
+      <div className="flex-1" />
+      {/* Connect Button */}
+      <button className="bg-white text-black font-semibold rounded px-6 py-2 ml-8">Connect</button>
     </header>
   );
 }

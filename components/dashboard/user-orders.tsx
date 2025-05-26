@@ -23,7 +23,7 @@ import {
 type OrderStatus = 'all' | 'filled' | 'cancelled' | 'pending';
 type OrderType = 'all' | 'market' | 'limit';
 
-export function UserOrders() {
+export function UserOrders({ ordersReloadSignal }: { ordersReloadSignal: number }) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<OrderStatus>('all');
@@ -53,7 +53,7 @@ export function UserOrders() {
     fetchOrders();
     const interval = setInterval(fetchOrders, 10000);
     return () => clearInterval(interval);
-  }, []);
+  }, [ordersReloadSignal]);
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -75,62 +75,58 @@ export function UserOrders() {
   });
 
   return (
-    <Card className="bg-[#23262F] border-none rounded-xl shadow-md">
-      <CardHeader className="pb-2">
-        <div className="flex justify-between items-center">
-          <div>
-            <CardTitle>Order History</CardTitle>
-            <CardDescription>Recent trading activity</CardDescription>
-          </div>
-          <div className="flex gap-2">
-            <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as OrderStatus)}>
-              <SelectTrigger className="w-[120px]">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="filled">Filled</SelectItem>
-                <SelectItem value="cancelled">Cancelled</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={typeFilter} onValueChange={(value) => setTypeFilter(value as OrderType)}>
-              <SelectTrigger className="w-[120px]">
-                <SelectValue placeholder="Type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="market">Market</SelectItem>
-                <SelectItem value="limit">Limit</SelectItem>
-              </SelectContent>
-            </Select>
+    <div className="w-full bg-black px-4 py-2">
+      <div className="flex justify-between items-center mb-2">
+        <span className="text-white text-base font-semibold">Orders</span>
+      </div>
+      {error ? (
+        <div className="flex flex-col items-center justify-center h-full w-full py-8">
+          <div className="flex flex-col items-center">
+            <svg width="48" height="48" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="48" height="48" rx="12" fill="#23262F"/><path d="M24 16v16M16 24h16" stroke="#8F939E" strokeWidth="2" strokeLinecap="round"/></svg>
+            <span className="mt-4 text-neutral-500 text-base">No orders found</span>
           </div>
         </div>
-      </CardHeader>
-      <CardContent>
-        {error ? (
-          <div className="text-center py-8 text-muted-foreground">
-            {error}
+      ) : loading ? (
+        <div className="flex justify-center py-8">
+          <Loader className="animate-spin" />
+        </div>
+      ) : filteredOrders.length === 0 ? (
+        <div className="flex flex-col items-center justify-center h-full w-full py-8">
+          <div className="flex flex-col items-center">
+            <svg width="48" height="48" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="48" height="48" rx="12" fill="#23262F"/><path d="M24 16v16M16 24h16" stroke="#8F939E" strokeWidth="2" strokeLinecap="round"/></svg>
+            <span className="mt-4 text-neutral-500 text-base">No orders found</span>
           </div>
-        ) : loading ? (
-          <div className="flex justify-center py-8">
-            <Loader className="animate-spin" />
-          </div>
-        ) : filteredOrders.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            No orders found
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {/* Render orders table */}
-            {filteredOrders.map((order) => (
-              <div key={order.id} className="flex items-center justify-between">
-                {/* Order details */}
-              </div>
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-xs text-white">
+            <thead>
+              <tr className="border-b border-neutral-800">
+                <th className="px-2 py-1 font-medium text-left">Market</th>
+                <th className="px-2 py-1 font-medium text-left">Type</th>
+                <th className="px-2 py-1 font-medium text-left">Side</th>
+                <th className="px-2 py-1 font-medium text-left">Amount</th>
+                <th className="px-2 py-1 font-medium text-left">Price</th>
+                <th className="px-2 py-1 font-medium text-left">Status</th>
+                <th className="px-2 py-1 font-medium text-left">Time</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredOrders.map((order) => (
+                <tr key={order.id} className="border-b border-neutral-800">
+                  <td className="px-2 py-1">{order.market}</td>
+                  <td className="px-2 py-1">{order.order_type}</td>
+                  <td className="px-2 py-1">{order.position_type}</td>
+                  <td className="px-2 py-1">{order.amount}</td>
+                  <td className="px-2 py-1">${order.entry_price}</td>
+                  <td className="px-2 py-1">{order.status}</td>
+                  <td className="px-2 py-1">{format(new Date(order.created_at), 'MMM d, HH:mm')}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
   );
 }

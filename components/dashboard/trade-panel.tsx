@@ -17,6 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import { getCurrentUser } from '@/lib/auth';
 import { createOrder } from '@/lib/trading';
 import { Loader } from 'lucide-react';
+import { usePositionsReload } from './PositionsReloadContext';
 
 interface TradePanelProps {
   market: string;
@@ -35,6 +36,8 @@ export function TradePanel({ market, currentPrice = 0 }: TradePanelProps) {
   const userFetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastFetchTimeRef = useRef<number>(0);
   const CACHE_DURATION = 60000; // 1 minute cache
+  const { reloadPositions } = usePositionsReload();
+  const [summaryOpen, setSummaryOpen] = useState(true);
   
   useEffect(() => {
     // Update price when currentPrice changes
@@ -149,6 +152,15 @@ export function TradePanel({ market, currentPrice = 0 }: TradePanelProps) {
       );
       
       if (result) {
+        // Calculate new balance immediately
+        const newBalance = positionType === 'Buy' 
+          ? balance - total 
+          : balance + total;
+        
+        // Update local balance state
+        setBalance(newBalance);
+        lastFetchTimeRef.current = Date.now();
+
         toast({
           title: "Order placed successfully",
           description: `${positionType} ${amount.toFixed(4)} ${market} at $${price.toFixed(2)}`,
@@ -157,12 +169,13 @@ export function TradePanel({ market, currentPrice = 0 }: TradePanelProps) {
         // Reset form
         setAmount(0);
         
-        // Refresh balance
+        // Fetch latest balance from server in background
         const user = await getCurrentUser(walletAddress);
         if (user) {
           setBalance(user.current_balance);
           lastFetchTimeRef.current = Date.now();
         }
+        reloadPositions(); // Trigger positions reload
       } else {
         toast({
           title: "Failed to place order",
@@ -183,142 +196,76 @@ export function TradePanel({ market, currentPrice = 0 }: TradePanelProps) {
   };
 
   return (
-    <Card className="bg-[#1E1F25] border border-[#2D2E36] rounded-lg shadow-sm">
-      <CardHeader className="pb-2 border-b border-[#2D2E36]">
-        <CardTitle className="text-[#F5F5F7] text-lg">Place Order</CardTitle>
-        <CardDescription className="text-[#8F939E]">Available Balance: ${balance.toLocaleString()}</CardDescription>
-      </CardHeader>
-      <CardContent className="pt-4">
-        <Tabs defaultValue="market" value={orderType} onValueChange={(value) => setOrderType(value as 'market' | 'limit')}>
-          <TabsList className="w-full mb-4 bg-[#2D2E36] p-1 h-10">
-            <TabsTrigger value="market" className="flex-1 data-[state=active]:bg-[#3A3B45] data-[state=active]:text-white">Market</TabsTrigger>
-            <TabsTrigger value="limit" className="flex-1 data-[state=active]:bg-[#3A3B45] data-[state=active]:text-white">Limit</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="market">
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="amount" className="text-[#8F939E] text-sm">Amount</Label>
-                <Input
-                  id="amount"
-                  type="number"
-                  value={amount || ''}
-                  onChange={(e) => handleAmountChange(e.target.value)}
-                  className="font-mono bg-[#2D2E36] border-[#3A3B45] text-white h-10"
-                  step="0.0001"
-                  min="0"
-                />
-              </div>
-              
-              <div>
-                <div className="flex justify-between text-xs text-[#8F939E] mb-2">
-                  <span>0%</span>
-                  <span>25%</span>
-                  <span>50%</span>
-                  <span>75%</span>
-                  <span>100%</span>
-                </div>
-                <Slider
-                  defaultValue={[0]}
-                  max={100}
-                  step={1}
-                  onValueChange={handleSliderChange}
-                  className="[&>span]:bg-[#4E9EFD] [&>span]:h-1"
-                />
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <Button
-                  onClick={() => handleOrder('Buy')}
-                  disabled={isLoading}
-                  className="bg-[#0ECB81] hover:bg-[#0ECB81]/90 text-white h-10 font-medium"
-                >
-                  {isLoading ? <Loader className="h-4 w-4 animate-spin" /> : 'Buy'}
-                </Button>
-                <Button
-                  onClick={() => handleOrder('Sell')}
-                  disabled={isLoading}
-                  className="bg-[#F6465D] hover:bg-[#F6465D]/90 text-white h-10 font-medium"
-                >
-                  {isLoading ? <Loader className="h-4 w-4 animate-spin" /> : 'Sell'}
-                </Button>
-              </div>
+    <div className="h-full w-full bg-black px-0 py-0 flex flex-col gap-0">
+      {/* Account Summary Collapsible Header */}
+      <div className="flex items-center justify-between px-6 pt-4 pb-2 cursor-pointer select-none" onClick={() => setSummaryOpen(!summaryOpen)}>
+        <span className="text-white text-base font-semibold">ACCOUNT SUMMARY</span>
+        <svg className={`w-4 h-4 text-white transition-transform ${summaryOpen ? '' : 'rotate-180'}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+      </div>
+      {summaryOpen && (
+        <div className="bg-black px-6 pb-2">
+          <div className="flex flex-col gap-1 text-white text-sm mb-2">
+            <div className="flex justify-between items-center">
+              <span className="text-neutral-400">Buying Power</span>
+              <span className="text-white font-semibold">$0</span>
             </div>
-          </TabsContent>
-          
-          <TabsContent value="limit">
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="limit-price">Limit Price</Label>
-                <Input
-                  id="limit-price"
-                  type="number"
-                  value={price || ''}
-                  onChange={(e) => setPrice(parseFloat(e.target.value) || 0)}
-                  className="font-mono"
-                  step="0.01"
-                  min="0"
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="limit-amount">Amount</Label>
-                <Input
-                  id="limit-amount"
-                  type="number"
-                  value={amount || ''}
-                  onChange={(e) => handleAmountChange(e.target.value)}
-                  className="font-mono"
-                  step="0.0001"
-                  min="0"
-                />
-              </div>
-              
-              <div>
-                <div className="flex justify-between text-xs text-muted-foreground mb-2">
-                  <span>0%</span>
-                  <span>25%</span>
-                  <span>50%</span>
-                  <span>75%</span>
-                  <span>100%</span>
-                </div>
-                <Slider
-                  defaultValue={[0]}
-                  max={100}
-                  step={1}
-                  onValueChange={handleSliderChange}
-                />
-              </div>
-              
-              <div>
-                <Label className="text-xs text-muted-foreground">Price</Label>
-                <div className="font-mono text-lg">${price.toFixed(2)}</div>
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">Total</Label>
-                <div className="font-mono text-lg">${total.toFixed(2)}</div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <Button
-                  onClick={() => handleOrder('Buy')}
-                  disabled={isLoading}
-                  className="bg-[#0ECB81] hover:bg-[#0ECB81]/90 text-white h-10 font-medium"
-                >
-                  {isLoading ? <Loader className="h-4 w-4 animate-spin" /> : 'Buy'}
-                </Button>
-                <Button
-                  onClick={() => handleOrder('Sell')}
-                  disabled={isLoading}
-                  className="bg-[#F6465D] hover:bg-[#F6465D]/90 text-white h-10 font-medium"
-                >
-                  {isLoading ? <Loader className="h-4 w-4 animate-spin" /> : 'Sell'}
-                </Button>
-              </div>
+            <div className="flex justify-between items-center">
+              <span className="text-neutral-400">Available Margin</span>
+              <span className="text-white font-semibold">$0</span>
             </div>
-          </TabsContent>
-        </Tabs>
-      </CardContent>
-    </Card>
+            <div className="flex justify-between items-center">
+              <span className="text-neutral-400">Leverage</span>
+              <span className="text-white font-semibold">x --</span>
+            </div>
+          </div>
+          <div className="flex gap-2 mb-2">
+            <button className="flex-1 bg-neutral-900 text-white border border-neutral-800 rounded py-2 font-semibold">Deposit</button>
+            <button className="flex-1 bg-neutral-900 text-white border border-neutral-800 rounded py-2 font-semibold">Withdraw</button>
+          </div>
+        </div>
+      )}
+      {/* Order Form */}
+      <div className="bg-black px-6 pb-4 flex flex-col gap-2">
+        <div className="flex gap-2 mb-2">
+          <button className={`flex-1 py-2 rounded text-white font-semibold ${orderType === 'market' ? 'bg-green-500' : 'bg-neutral-900 border border-neutral-800'}`} onClick={() => setOrderType('market')}>MARKET</button>
+          <button className={`flex-1 py-2 rounded text-white font-semibold ${orderType === 'limit' ? 'bg-green-500' : 'bg-neutral-900 border border-neutral-800'}`} onClick={() => setOrderType('limit')}>LIMIT</button>
+        </div>
+        <div className="flex gap-2 mb-2">
+          <button className="flex-1 bg-green-500 text-white font-semibold rounded py-2">BUY/LONG</button>
+          <button className="flex-1 bg-neutral-900 text-white font-semibold rounded py-2 border border-neutral-800">SELL/SHORT</button>
+        </div>
+        <div className="flex flex-col gap-2 mb-2">
+          <div className="flex justify-between items-center">
+            <span className="text-neutral-400 text-xs">Order value</span>
+            <input type="number" value={amount || ''} onChange={e => handleAmountChange(e.target.value)} className="bg-neutral-900 text-white text-xs rounded px-2 py-1 w-24 border border-neutral-800 focus:outline-none" placeholder="0" />
+            <span className="text-neutral-400 text-xs">USDC</span>
+            <span className="text-neutral-400 text-xs">BTC</span>
+          </div>
+          <div className="flex justify-between items-center text-xs text-neutral-400">
+            <span>Order Size:</span>
+            <span className="text-white">0 BTC</span>
+          </div>
+        </div>
+        <div className="flex flex-col gap-1 text-xs text-neutral-400 mb-2">
+          <div className="flex justify-between items-center">
+            <span>Market</span>
+            <span className="text-white">BTC</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span>Estimated entry price:</span>
+            <span className="text-white">$109076.6</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span>Liquidation Price</span>
+            <span className="text-white">$0.00</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span>Fees:</span>
+            <span className="text-white">0 USDC</span>
+          </div>
+        </div>
+        <button className="w-full bg-green-500 text-white font-semibold rounded py-3 text-lg mt-2">BUY BTC</button>
+      </div>
+    </div>
   );
 }

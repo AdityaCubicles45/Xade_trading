@@ -21,7 +21,7 @@ export function TradingViewChart({
   symbol,
   theme = 'dark',
   width = '100%',
-  height = 500,
+  height = '100%',
   interval = 'D',
   timezone = 'Etc/UTC',
   studies = [
@@ -126,11 +126,9 @@ export function TradingViewChart({
       id={`tradingview_${symbol}`} 
       ref={containerRef}
       style={{ 
-        width, 
-        height,
-        backgroundColor: theme === 'dark' ? '#131722' : '#ffffff',
-        borderRadius: '8px',
-        overflow: 'hidden'
+        width: '100%',
+        height: '100%',
+        backgroundColor: theme === 'dark' ? '#131722' : '#ffffff'
       }}
     />
   );

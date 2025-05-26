@@ -15,6 +15,7 @@ import { formatPrice } from '@/lib/api';
 import { Loader } from 'lucide-react';
 import { getWalletAddress } from '@/lib/auth';
 import { getCurrentUser, fetchPositions, closePosition } from '@/lib/api';
+import { usePositionsReload } from './PositionsReloadContext';
 
 interface Position {
   id: string;
@@ -25,7 +26,11 @@ interface Position {
   pnl: number;
 }
 
-export function UserPositions() {
+interface UserPositionsProps {
+  reloadOrders: () => void;
+}
+
+export function UserPositions({ reloadOrders }: UserPositionsProps) {
   const { toast } = useToast();
   const [positions, setPositions] = useState<Position[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,6 +38,7 @@ export function UserPositions() {
   const userFetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastFetchTimeRef = useRef<number>(0);
   const CACHE_DURATION = 60000; // 1 minute cache
+  const { reloadSignal } = usePositionsReload();
 
   const loadPositions = async () => {
     try {
@@ -84,12 +90,24 @@ export function UserPositions() {
   useEffect(() => {
     loadPositions();
 
+    // Listen for real-time price updates
+    const handlePriceUpdate = (event: CustomEvent) => {
+      const { symbol, price } = event.detail;
+      setPositions(prevPositions =>
+        prevPositions.map(pos =>
+          pos.market === symbol ? { ...pos, current_price: price } : pos
+        )
+      );
+    };
+    window.addEventListener('priceUpdate', handlePriceUpdate as EventListener);
+
     return () => {
       if (userFetchTimeoutRef.current) {
         clearTimeout(userFetchTimeoutRef.current);
       }
+      window.removeEventListener('priceUpdate', handlePriceUpdate as EventListener);
     };
-  }, []);
+  }, [reloadSignal]);
 
   const handleClosePosition = async (positionId: string) => {
     try {
@@ -107,6 +125,8 @@ export function UserPositions() {
         
         // Refresh positions
         loadPositions();
+        // Trigger order history reload
+        reloadOrders();
       } else {
         toast({
           title: "Failed to close position",
@@ -156,68 +176,63 @@ export function UserPositions() {
     );
   }
 
+  if (positions.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full w-full bg-black py-8">
+        <div className="flex flex-col items-center">
+          <svg width="48" height="48" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="48" height="48" rx="12" fill="#23262F"/><path d="M24 16v16M16 24h16" stroke="#8F939E" strokeWidth="2" strokeLinecap="round"/></svg>
+          <span className="mt-4 text-neutral-500 text-base">You don't have any open position</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <Card className="bg-[#23262F] border-none rounded-xl shadow-md">
-      <CardHeader className="pb-2">
-        <CardTitle>Open Positions</CardTitle>
-        <CardDescription>Your active trading positions</CardDescription>
-      </CardHeader>
-      <CardContent>
-        {positions.length === 0 ? (
-          <div className="text-center text-muted-foreground py-8">
-            No open positions
-          </div>
-        ) : (
-          <div className="space-y-4">
+    <div className="w-full bg-black px-4 py-2">
+      <div className="flex justify-between items-center mb-2">
+        <span className="text-white text-base font-semibold">Positions</span>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="min-w-full text-xs text-white">
+          <thead>
+            <tr className="border-b border-neutral-800">
+              <th className="px-2 py-1 font-medium text-left">Market</th>
+              <th className="px-2 py-1 font-medium text-left">Amount</th>
+              <th className="px-2 py-1 font-medium text-left">Entry</th>
+              <th className="px-2 py-1 font-medium text-left">Current</th>
+              <th className="px-2 py-1 font-medium text-left">PnL</th>
+              <th className="px-2 py-1 font-medium text-left">Action</th>
+            </tr>
+          </thead>
+          <tbody>
             {positions.map((position) => (
-              <div 
-                key={position.id} 
-                className="p-4 rounded-lg border bg-card"
-              >
-                <div className="flex justify-between items-center mb-2">
-                  <div className="font-medium">{position.market}</div>
+              <tr key={position.id} className="border-b border-neutral-800">
+                <td className="px-2 py-1">{position.market}</td>
+                <td className="px-2 py-1">{position.amount.toFixed(4)}</td>
+                <td className="px-2 py-1">${formatPrice(position.entry_price)}</td>
+                <td className="px-2 py-1">${formatPrice(position.current_price)}</td>
+                <td className="px-2 py-1">
+                  <span className={cn(
+                    position.pnl > 0 ? "text-green-500" : position.pnl < 0 ? "text-red-500" : "text-white"
+                  )}>
+                    ${formatPrice(position.pnl)}
+                  </span>
+                </td>
+                <td className="px-2 py-1">
                   <Button 
                     variant="outline" 
                     size="sm"
+                    className="bg-neutral-900 text-white border border-neutral-800 rounded px-3 py-1 text-xs"
                     onClick={() => handleClosePosition(position.id)}
                   >
                     Close
                   </Button>
-                </div>
-                
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Amount:</span>
-                    <span className="font-mono">{position.amount.toFixed(4)}</span>
-                  </div>
-                  
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Entry:</span>
-                    <span className="font-mono">${formatPrice(position.entry_price)}</span>
-                  </div>
-                  
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Current:</span>
-                    <span className="font-mono">${formatPrice(position.current_price)}</span>
-                  </div>
-                  
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">PnL:</span>
-                    <span 
-                      className={cn(
-                        "font-mono",
-                        position.pnl > 0 ? "text-green-500" : position.pnl < 0 ? "text-red-500" : ""
-                      )}
-                    >
-                      ${formatPrice(position.pnl)}
-                    </span>
-                  </div>
-                </div>
-              </div>
+                </td>
+              </tr>
             ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 }
