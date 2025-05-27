@@ -19,7 +19,7 @@ import { Button } from '@/components/ui/button';
 import { Check, ChevronsUpDown, Search, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Token } from '@/lib/types';
-import { formatPercentage } from '@/lib/api';
+import { formatPercentage, formatPrice, initializeWebSocket, closeWebSocket } from '@/lib/api';
 import { getCurrentUser } from '@/lib/api';
 
 interface MarketSelectorProps {
@@ -29,9 +29,30 @@ interface MarketSelectorProps {
 }
 
 export function MarketSelector({ selectedMarket, onMarketChange, tokens }: MarketSelectorProps) {
+  const [currentPrice, setCurrentPrice] = useState<number | null>(null);
+
+  useEffect(() => {
+    // Initialize WebSocket for real-time price updates
+    const ws = initializeWebSocket([selectedMarket]);
+
+    // Listen for price updates
+    const handlePriceUpdate = (event: CustomEvent) => {
+      if (event.detail.symbol === selectedMarket) {
+        setCurrentPrice(event.detail.price);
+      }
+    };
+
+    window.addEventListener('priceUpdate', handlePriceUpdate as EventListener);
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('priceUpdate', handlePriceUpdate as EventListener);
+      closeWebSocket();
+    };
+  }, [selectedMarket]);
+
   // Dummy stats for now; replace with real data as needed
   const stats = {
-    indexPrice: '109048.3',
     change24h: '1.304%',
     volume24h: '$20.57M',
     openInterest: '$3.28M',
@@ -57,14 +78,13 @@ export function MarketSelector({ selectedMarket, onMarketChange, tokens }: Marke
         </select>
         <ChevronDown className="w-5 h-5 text-white" />
         {selectedMarket && (
-          <span className="text-red-500 text-xl font-bold ml-2">
-            ${selectedMarket.split('USDT')[0]}
+          <span className="text-white text-xl font-bold ml-2">
+            ${currentPrice ? formatPrice(currentPrice) : '...'}
           </span>
         )}
       </div>
       {/* Stats Row */}
       <div className="flex items-center gap-8 text-white text-sm mx-auto">
-        <div>Index Price <span className="text-neutral-400">${stats.indexPrice}</span></div>
         <div>24h Change <span className="text-green-400">{stats.change24h}</span></div>
         <div>24H Volume <span className="text-neutral-400">{stats.volume24h}</span></div>
         <div>Open Interest <span className="text-neutral-400">{stats.openInterest}</span></div>

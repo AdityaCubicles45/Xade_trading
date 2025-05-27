@@ -119,8 +119,7 @@ export const getCurrentUser = async (walletAddress: string): Promise<User | null
       id: user.id,
       walletAddress: user.wallet_address,
       balance: user.current_balance,
-      tier: user.tier,
-      createdAt: user.created_at || new Date().toISOString()
+      tier: user.tier
     };
   } catch (error) {
     console.error('Error fetching current user:', error);
