@@ -30,6 +30,10 @@ interface MarketSelectorProps {
 
 export function MarketSelector({ selectedMarket, onMarketChange, tokens }: MarketSelectorProps) {
   const [currentPrice, setCurrentPrice] = useState<number | null>(null);
+  const [priceChange, setPriceChange] = useState<{ direction: 'up' | 'down' | null; price: number | null }>({
+    direction: null,
+    price: null
+  });
 
   useEffect(() => {
     // Initialize WebSocket for real-time price updates
@@ -38,7 +42,14 @@ export function MarketSelector({ selectedMarket, onMarketChange, tokens }: Marke
     // Listen for price updates
     const handlePriceUpdate = (event: CustomEvent) => {
       if (event.detail.symbol === selectedMarket) {
-        setCurrentPrice(event.detail.price);
+        const newPrice = event.detail.price;
+        if (currentPrice) {
+          setPriceChange({
+            direction: newPrice > currentPrice ? 'up' : 'down',
+            price: newPrice
+          });
+        }
+        setCurrentPrice(newPrice);
       }
     };
 
@@ -49,7 +60,7 @@ export function MarketSelector({ selectedMarket, onMarketChange, tokens }: Marke
       window.removeEventListener('priceUpdate', handlePriceUpdate as EventListener);
       closeWebSocket();
     };
-  }, [selectedMarket]);
+  }, [selectedMarket, currentPrice]);
 
   // Dummy stats for now; replace with real data as needed
   const stats = {
@@ -78,7 +89,11 @@ export function MarketSelector({ selectedMarket, onMarketChange, tokens }: Marke
         </select>
         <ChevronDown className="w-5 h-5 text-white" />
         {selectedMarket && (
-          <span className="text-white text-xl font-bold ml-2">
+          <span className={`text-xl font-bold ml-2 transition-colors duration-200 ${
+            priceChange.direction === 'up' ? 'text-green-400' : 
+            priceChange.direction === 'down' ? 'text-red-400' : 
+            'text-white'
+          }`}>
             ${currentPrice ? formatPrice(currentPrice) : '...'}
           </span>
         )}

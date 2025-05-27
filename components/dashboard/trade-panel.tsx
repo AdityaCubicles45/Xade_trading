@@ -221,8 +221,8 @@ export function TradePanel({ market, currentPrice = 0 }: TradePanelProps) {
           <div className="flex gap-2 mb-2">
             <button className="flex-1 bg-neutral-900 text-white border border-neutral-800 rounded py-2 font-semibold">Deposit</button>
             <button className="flex-1 bg-neutral-900 text-white border border-neutral-800 rounded py-2 font-semibold">Withdraw</button>
-          </div>
-        </div>
+              </div>
+                </div>
       )}
       {/* Order Form */}
       <div className="bg-black px-6 pb-4 flex flex-col gap-2">
@@ -239,29 +239,29 @@ export function TradePanel({ market, currentPrice = 0 }: TradePanelProps) {
           >
             LIMIT
           </button>
-        </div>
+              </div>
         <div className="flex gap-2 mb-2">
           <button 
             className="flex-1 bg-green-500 text-white font-semibold rounded py-2"
-            onClick={() => handleOrder('Buy')}
-            disabled={isLoading}
-          >
+                  onClick={() => handleOrder('Buy')}
+                  disabled={isLoading}
+                >
             {isLoading ? 'PLACING ORDER...' : 'BUY/LONG'}
           </button>
           <button 
             className="flex-1 bg-red-500 text-white font-semibold rounded py-2"
-            onClick={() => handleOrder('Sell')}
-            disabled={isLoading}
-          >
+                  onClick={() => handleOrder('Sell')}
+                  disabled={isLoading}
+                >
             {isLoading ? 'PLACING ORDER...' : 'SELL/SHORT'}
           </button>
-        </div>
+              </div>
         <div className="flex flex-col gap-2 mb-2">
           <div className="flex justify-between items-center">
             <span className="text-neutral-400 text-xs">Order value</span>
             <input 
-              type="number" 
-              value={amount || ''} 
+                  type="number"
+                  value={amount || ''}
               onChange={e => handleAmountChange(e.target.value)} 
               className="bg-neutral-900 text-white text-xs rounded px-2 py-1 w-24 border border-neutral-800 focus:outline-none" 
               placeholder="0" 
@@ -278,21 +278,21 @@ export function TradePanel({ market, currentPrice = 0 }: TradePanelProps) {
           <div className="flex justify-between items-center">
             <span>Market</span>
             <span className="text-white">{market}</span>
-          </div>
+              </div>
           <div className="flex justify-between items-center">
             <span>Estimated entry price:</span>
             <span className="text-white">${price.toFixed(2)}</span>
-          </div>
+                </div>
           <div className="flex justify-between items-center">
             <span>Total Value:</span>
             <span className="text-white">${total.toFixed(2)}</span>
-          </div>
+              </div>
           <div className="flex justify-between items-center">
             <span>Fees:</span>
             <span className="text-white">${(total * 0.001).toFixed(2)} USDC</span>
-          </div>
-        </div>
-      </div>
-    </div>
+              </div>
+              </div>
+              </div>
+            </div>
   );
 }

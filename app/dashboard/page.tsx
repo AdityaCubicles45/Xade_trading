@@ -31,14 +31,14 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const initializeDashboard = async () => {
-      setIsClient(true);
+    setIsClient(true);
 
-      // Check authentication
-      if (!isAuthenticated()) {
-        console.log('User not authenticated, redirecting to home...');
-        redirect('/');
-        return;
-      }
+    // Check authentication
+    if (!isAuthenticated()) {
+      console.log('User not authenticated, redirecting to home...');
+      redirect('/');
+      return;
+    }
 
       // Handle selected balance from pricing page
       const selectedBalance = localStorage.getItem('selectedBalance');
@@ -51,7 +51,7 @@ export default function DashboardPage() {
         localStorage.removeItem('selectedBalance');
       }
 
-      // Fetch top tokens
+    // Fetch top tokens
       try {
         setIsLoading(true);
         const tokensData = await fetchTopTokens();
@@ -159,30 +159,30 @@ export default function DashboardPage() {
   return (
     <PositionsReloadProvider>
       <div className="flex flex-col min-h-screen bg-black">
-        <DashboardHeader />
+      <DashboardHeader />
         {/* Market Selector at the very top, spanning full width */}
-        <MarketSelector 
-          selectedMarket={selectedMarket}
-          onMarketChange={handleMarketChange}
-          tokens={tokens}
-        />
+          <MarketSelector 
+            selectedMarket={selectedMarket}
+            onMarketChange={handleMarketChange}
+            tokens={tokens}
+          />
         {/* Main content row: Chart | Order Book | Trade Panel */}
         <div className="flex flex-row w-full bg-black border-b border-neutral-800" style={{height: '420px', minHeight: '420px', maxHeight: '420px'}}>
           {/* Chart */}
           <div className="flex-1 min-w-0 h-full m-0 p-0 overflow-hidden flex flex-col">
             <div className="h-full w-full">
-              <TradingViewChart symbol={selectedMarket} />
+                <TradingViewChart symbol={selectedMarket} />
             </div>
           </div>
           {/* Order Book */}
           <div className="w-[340px] h-full border-l border-neutral-800 m-0 p-0 overflow-hidden flex flex-col">
-            <OrderBook market={selectedMarket} />
-          </div>
+                <OrderBook market={selectedMarket} />
+              </div>
           {/* Trade Panel */}
           <div className="w-[340px] h-full border-l border-neutral-800 m-0 p-0 overflow-hidden flex flex-col">
-            <TradePanel market={selectedMarket} currentPrice={currentPrice} />
-          </div>
-        </div>
+                <TradePanel market={selectedMarket} currentPrice={currentPrice} />
+              </div>
+            </div>
         {/* Portfolio Bar below main content row */}
         <div className="flex flex-row items-center justify-between w-full px-8 py-0 bg-black border-b border-neutral-800 h-16">
           <div className="flex flex-col items-start justify-center">

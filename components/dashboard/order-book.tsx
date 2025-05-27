@@ -15,6 +15,11 @@ export function OrderBook({ market }: OrderBookProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
+  const [lastUpdateTime, setLastUpdateTime] = useState<number>(Date.now());
+  const [priceChange, setPriceChange] = useState<{ direction: 'up' | 'down' | null; price: number | null }>({
+    direction: null,
+    price: null
+  });
 
   // Calculate mid price
   const midPrice = asks.length > 0 && bids.length > 0
@@ -41,7 +46,6 @@ export function OrderBook({ market }: OrderBookProps) {
           throw new Error(errorData.msg || 'Failed to fetch orderbook');
         }
         const data = await response.json();
-        console.log('Initial orderbook data:', data);
         
         if (!data.bids || !data.asks) {
           throw new Error('Invalid orderbook data received');
@@ -62,9 +66,7 @@ export function OrderBook({ market }: OrderBookProps) {
           wsRef.current.close();
         }
 
-        // Use the correct WebSocket URL format for Binance
         const wsUrl = `wss://stream.binance.com:9443/ws/${market.toLowerCase()}@depth20@100ms`;
-        console.log('Connecting to WebSocket:', wsUrl);
         const ws = new WebSocket(wsUrl);
         
         let reconnectAttempts = 0;
@@ -72,21 +74,35 @@ export function OrderBook({ market }: OrderBookProps) {
         
         ws.onopen = () => {
           console.log('OrderBook WebSocket connected successfully');
-          setError(null); // Clear any previous errors
-          reconnectAttempts = 0; // Reset reconnect attempts on successful connection
+          setError(null);
+          reconnectAttempts = 0;
         };
 
         ws.onmessage = (event) => {
           try {
             const data = JSON.parse(event.data);
-            console.log('Received WebSocket message:', data);
             
-            // Handle snapshot and update events
             if (data.e === 'depthUpdate') {
-              console.log('Processing depth update:', {
-                bids: data.b,
-                asks: data.a
-              });
+              const newMidPrice = asks.length > 0 && bids.length > 0
+                ? (asks[0].price + bids[0].price) / 2
+                : null;
+
+              if (newMidPrice && midPrice) {
+                setPriceChange({
+                  direction: newMidPrice > midPrice ? 'up' : 'down',
+                  price: newMidPrice
+                });
+
+                // Reset the price change direction after a short delay
+                setTimeout(() => {
+                  setPriceChange(prev => ({
+                    ...prev,
+                    direction: null
+                  }));
+                }, 1000);
+              }
+
+              setLastUpdateTime(Date.now());
               
               // Update bids
               if (data.b) {
@@ -98,12 +114,10 @@ export function OrderBook({ market }: OrderBookProps) {
                     const index = newBids.findIndex(b => b.price === price);
                     
                     if (quantity === 0) {
-                      // Remove the price level if quantity is 0
                       if (index !== -1) {
                         newBids.splice(index, 1);
                       }
                     } else {
-                      // Update or add the price level
                       if (index !== -1) {
                         newBids[index] = { price, quantity };
                       } else {
@@ -111,10 +125,7 @@ export function OrderBook({ market }: OrderBookProps) {
                       }
                     }
                   });
-                  // Sort bids in descending order
-                  const sortedBids = newBids.sort((a, b) => b.price - a.price).slice(0, 20);
-                  console.log('Updated bids:', sortedBids);
-                  return sortedBids;
+                  return newBids.sort((a, b) => b.price - a.price).slice(0, 20);
                 });
               }
 
@@ -128,12 +139,10 @@ export function OrderBook({ market }: OrderBookProps) {
                     const index = newAsks.findIndex(a => a.price === price);
                     
                     if (quantity === 0) {
-                      // Remove the price level if quantity is 0
                       if (index !== -1) {
                         newAsks.splice(index, 1);
                       }
                     } else {
-                      // Update or add the price level
                       if (index !== -1) {
                         newAsks[index] = { price, quantity };
                       } else {
@@ -141,10 +150,7 @@ export function OrderBook({ market }: OrderBookProps) {
                       }
                     }
                   });
-                  // Sort asks in ascending order
-                  const sortedAsks = newAsks.sort((a, b) => a.price - b.price).slice(0, 20);
-                  console.log('Updated asks:', sortedAsks);
-                  return sortedAsks;
+                  return newAsks.sort((a, b) => a.price - b.price).slice(0, 20);
                 });
               }
             }
@@ -165,11 +171,8 @@ export function OrderBook({ market }: OrderBookProps) {
             wasClean: event.wasClean
           });
           
-          // Attempt to reconnect with exponential backoff
           if (reconnectAttempts < maxReconnectAttempts) {
             const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
-            console.log(`Attempting to reconnect in ${delay}ms (attempt ${reconnectAttempts + 1}/${maxReconnectAttempts})`);
-            
             setTimeout(() => {
               if (wsRef.current === ws) {
                 reconnectAttempts++;
@@ -231,11 +234,20 @@ export function OrderBook({ market }: OrderBookProps) {
             <span className="w-12 text-right text-neutral-400">-</span>
           </div>
         ))}
-        {/* Mid Price */}
+        {/* Mid Price with animation */}
         {midPrice && (
-          <div className="flex items-center py-1 bg-neutral-900 rounded my-1">
+          <div className={`flex items-center py-1 bg-neutral-900 rounded my-1 transition-all duration-300 ${
+            priceChange.direction === 'up' ? 'bg-green-900/30' : 
+            priceChange.direction === 'down' ? 'bg-red-900/30' : ''
+          }`}>
             <span className="w-16 text-xs text-neutral-400"></span>
-            <span className="w-20 text-center text-green-400 font-semibold">{formatPrice(midPrice)}</span>
+            <span className={`w-20 text-center font-semibold transition-all duration-300 ${
+              priceChange.direction === 'up' ? 'text-green-400 scale-110' : 
+              priceChange.direction === 'down' ? 'text-red-400 scale-110' : 
+              'text-white'
+            }`}>
+              {formatPrice(midPrice)}
+            </span>
             <span className="w-12 text-xs text-neutral-400"></span>
           </div>
         )}

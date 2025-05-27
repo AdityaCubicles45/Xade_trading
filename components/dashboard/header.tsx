@@ -72,7 +72,7 @@ export function DashboardHeader() {
     const interval = setInterval(fetchBalance, 10000);
     return () => clearInterval(interval);
   }, []);
-
+  
   return (
     <header className="w-full bg-black border-b border-neutral-800 h-16 flex items-center px-8">
       {/* Logo */}
@@ -86,7 +86,7 @@ export function DashboardHeader() {
         <a href="#" className="hover:text-green-400">Community</a>
         <a href="#" className="hover:text-green-400">Mobile App</a>
         <a href="#" className="hover:text-green-400">Add Funds</a>
-      </nav>
+        </nav>
       {/* Spacer */}
       <div className="flex-1" />
       {/* Balance Display (replaces Connect button) */}

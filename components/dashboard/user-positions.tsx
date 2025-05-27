@@ -34,32 +34,32 @@ export function UserPositions({ reloadOrders }: UserPositionsProps) {
   const { reloadSignal } = usePositionsReload();
 
   const loadPositions = async () => {
-    try {
-      setLoading(true);
-      setError(null);
+      try {
+        setLoading(true);
+        setError(null);
 
-      const walletAddress = localStorage.getItem('walletAddress');
-      if (!walletAddress) {
-        setError('No wallet address found');
-        return;
-      }
+        const walletAddress = localStorage.getItem('walletAddress');
+        if (!walletAddress) {
+          setError('No wallet address found');
+          return;
+        }
 
-      // Check if we need to fetch user data
-      const now = Date.now();
-      if (now - lastFetchTimeRef.current < CACHE_DURATION) {
-        return; // Use cached data
-      }
+        // Check if we need to fetch user data
+        const now = Date.now();
+        if (now - lastFetchTimeRef.current < CACHE_DURATION) {
+          return; // Use cached data
+        }
 
-      // Clear any existing timeout
-      if (userFetchTimeoutRef.current) {
-        clearTimeout(userFetchTimeoutRef.current);
-      }
+        // Clear any existing timeout
+        if (userFetchTimeoutRef.current) {
+          clearTimeout(userFetchTimeoutRef.current);
+        }
 
-      // Set a new timeout to fetch user data
-      userFetchTimeoutRef.current = setTimeout(async () => {
-        const user = await getCurrentUser(walletAddress);
-        if (user) {
-          lastFetchTimeRef.current = now;
+        // Set a new timeout to fetch user data
+        userFetchTimeoutRef.current = setTimeout(async () => {
+          const user = await getCurrentUser(walletAddress);
+          if (user) {
+            lastFetchTimeRef.current = now;
           const fetchedPositions = await fetchPositions(walletAddress);
           setPositions(fetchedPositions.map(p => ({
             id: p.id,
@@ -70,16 +70,16 @@ export function UserPositions({ reloadOrders }: UserPositionsProps) {
             pnl: p.pnl,
             pnl_percentage: ((p.currentPrice - p.entryPrice) / p.entryPrice) * 100
           })));
-        }
-      }, 1000); // Debounce for 1 second
+          }
+        }, 1000); // Debounce for 1 second
 
-    } catch (error) {
-      console.error('Error fetching positions:', error);
-      setError('Failed to fetch positions');
-    } finally {
-      setLoading(false);
-    }
-  };
+      } catch (error) {
+        console.error('Error fetching positions:', error);
+        setError('Failed to fetch positions');
+      } finally {
+        setLoading(false);
+      }
+    };
 
   useEffect(() => {
     loadPositions();
@@ -150,12 +150,12 @@ export function UserPositions({ reloadOrders }: UserPositionsProps) {
         <div className="flex justify-between items-center mb-2">
           <span className="text-white text-base font-semibold">Positions</span>
         </div>
-        <div className="animate-pulse space-y-4">
+          <div className="animate-pulse space-y-4">
           <div className="h-4 bg-neutral-800 rounded w-3/4"></div>
           <div className="h-4 bg-neutral-800 rounded"></div>
           <div className="h-4 bg-neutral-800 rounded"></div>
         </div>
-      </div>
+          </div>
     );
   }
 
@@ -165,7 +165,7 @@ export function UserPositions({ reloadOrders }: UserPositionsProps) {
         <div className="flex justify-between items-center mb-2">
           <span className="text-white text-base font-semibold">Positions</span>
         </div>
-        <div className="text-red-500">{error}</div>
+          <div className="text-red-500">{error}</div>
       </div>
     );
   }
@@ -190,7 +190,7 @@ export function UserPositions({ reloadOrders }: UserPositionsProps) {
     <div className="w-full bg-black px-4 py-2">
       <div className="flex justify-between items-center mb-2">
         <span className="text-white text-base font-semibold">Positions</span>
-      </div>
+          </div>
       <div className="overflow-x-auto">
         <table className="min-w-full text-xs text-white">
           <thead>
@@ -239,7 +239,7 @@ export function UserPositions({ reloadOrders }: UserPositionsProps) {
             ))}
           </tbody>
         </table>
-      </div>
-    </div>
+                  </div>
+          </div>
   );
 }
