@@ -7,6 +7,7 @@ export interface User {
   stage: string;
   current_balance: number;
   current_pnl: number;
+  created_at?: string;
 }
 
 export interface Order {

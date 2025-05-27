@@ -21,6 +21,7 @@ import { cn } from '@/lib/utils';
 import { Token } from '@/lib/types';
 import { formatPercentage, formatPrice, initializeWebSocket, closeWebSocket } from '@/lib/api';
 import { getCurrentUser } from '@/lib/api';
+import Image from 'next/image';
 
 interface MarketSelectorProps {
   selectedMarket: string;
@@ -28,12 +29,23 @@ interface MarketSelectorProps {
   tokens: any[];
 }
 
+const FALLBACK_LOGO = 'https://assets.coingecko.com/coins/images/1/large/bitcoin.png';
+
 export function MarketSelector({ selectedMarket, onMarketChange, tokens }: MarketSelectorProps) {
   const [currentPrice, setCurrentPrice] = useState<number | null>(null);
   const [priceChange, setPriceChange] = useState<{ direction: 'up' | 'down' | null; price: number | null }>({
     direction: null,
     price: null
   });
+
+  // Get the current token symbol from the selected market
+  const currentTokenSymbol = selectedMarket.replace('USDT', '');
+  const currentToken = tokens.find(token => token.symbol === currentTokenSymbol);
+  const [logoSrc, setLogoSrc] = useState(currentToken?.image || FALLBACK_LOGO);
+
+  useEffect(() => {
+    setLogoSrc(currentToken?.image || FALLBACK_LOGO);
+  }, [currentTokenSymbol, currentToken]);
 
   useEffect(() => {
     // Initialize WebSocket for real-time price updates
@@ -74,7 +86,16 @@ export function MarketSelector({ selectedMarket, onMarketChange, tokens }: Marke
     <div className="flex items-center justify-between px-8 py-0 bg-black border-b border-neutral-800 h-16">
       {/* Market Dropdown */}
       <div className="flex items-center gap-3 min-w-[220px]">
-        <span className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-white font-bold text-lg">₿</span>
+        <div className="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center overflow-hidden">
+          <Image
+            src={logoSrc}
+            alt={currentTokenSymbol}
+            width={32}
+            height={32}
+            className="object-contain"
+            onError={() => setLogoSrc(FALLBACK_LOGO)}
+          />
+        </div>
         <select
           value={selectedMarket}
           onChange={e => onMarketChange(e.target.value)}
